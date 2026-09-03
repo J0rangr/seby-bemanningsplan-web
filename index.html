@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seby – Bemanningsplan</title>
+<style>
+  :root{
+    --navy:#1F3348;
+    --navy-soft:#3A4F63;
+    --sage:#7C9070;
+    --sage-light:#E7ECE2;
+    --wine:#7B3B4C;
+    --wine-light:#F3E4E7;
+    --amber:#B8763B;
+    --amber-light:#F6E9D8;
+    --bg:#F7F6F2;
+    --panel:#FFFFFF;
+    --border:#DEDCD3;
+    --border-faint:#EAE8E0;
+    --text:#23282B;
+    --text-soft:#6B6F66;
+    --radius:8px;
+    --week-w:66px;
+    --person-w:190px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .app{max-width:1400px;margin:0 auto;padding:20px 20px 60px;}
+
+  /* ---- Header ---- */
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sage);font-weight:700;}
+  .brand h1{margin:0;font-size:22px;color:var(--navy);letter-spacing:-0.01em;}
+  .sync-line{font-size:11px;color:var(--text-soft);display:flex;align-items:center;gap:6px;margin-top:4px;}
+  .sync-line.sync-error{color:var(--wine);font-weight:600;}
+  .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);display:inline-block;}
+  .sync-dot.err{background:var(--wine);}
+  .sync-line button{border:none;background:none;color:var(--navy-soft);text-decoration:underline;cursor:pointer;font-size:11px;padding:0;}
+  .sync-line.sync-error button{color:var(--wine);}
+
+  .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .btn{
+    border:1px solid var(--border);background:var(--panel);color:var(--text);
+    padding:7px 12px;border-radius:var(--radius);font-size:13px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;font-weight:500;
+  }
+  .btn:hover{border-color:var(--navy-soft);}
+  .btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn-primary:hover{background:var(--navy-soft);}
+  .btn-ghost{background:transparent;border-color:transparent;color:var(--navy-soft);}
+  .btn-danger{color:var(--wine);border-color:var(--wine-light);background:var(--wine-light);}
+  select.btn{cursor:pointer;}
+  .filter-wrap{position:relative;}
+  .filter-badge{background:var(--wine);color:#fff;border-radius:999px;font-size:10px;padding:1px 6px;font-weight:700;}
+  .filter-popover{
+    position:absolute;top:calc(100% + 6px);right:0;z-index:20;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 8px 24px rgba(31,51,72,.14);padding:12px;min-width:220px;
+  }
+  .filter-popover .fp-title{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-soft);font-weight:700;margin-bottom:8px;}
+  .filter-popover .fp-actions{display:flex;gap:10px;margin-bottom:8px;}
+  .filter-popover .fp-actions span{font-size:11.5px;color:var(--navy-soft);text-decoration:underline;cursor:pointer;}
+  .fp-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;}
+  .fp-row label{cursor:pointer;}
+
+  /* ---- Summary ---- */
+  .summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .summary-card{
+    flex:1;min-width:240px;background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:12px 14px;
+  }
+  .summary-card h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);display:flex;align-items:center;gap:6px;}
+  .summary-card .dot{width:8px;height:8px;border-radius:50%;}
+  .summary-card .dot.free{background:var(--sage);}
+  .summary-card .dot.soon{background:var(--amber);}
+  .summary-card .dot.flex{background:var(--amber);opacity:.6;}
+  .summary-card .dot.later{background:var(--navy-soft);}
+  .summary-card .dot.recruit{background:var(--wine);}
+  .summary-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{background:var(--bg);border:1px solid var(--border-faint);border-radius:999px;padding:3px 10px;font-size:12.5px;}
+  .chip b{font-weight:600;}
+  .empty-note{font-size:12.5px;color:var(--text-soft);}
+
+  /* ---- Grid ---- */
+  .grid-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .grid-scroll{overflow-x:auto;}
+  .grid-row{display:flex;}
+  .grid-row.head{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--border);}
+  .person-cell{
+    position:sticky;left:0;z-index:3;background:var(--panel);
+    width:var(--person-w);min-width:var(--person-w);
+    padding:8px 10px;border-right:1px solid var(--border);
+    display:flex;flex-direction:column;justify-content:center;gap:1px;
+  }
+  .grid-row.head .person-cell{z-index:6;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);font-weight:700;justify-content:flex-end;padding-bottom:6px;}
+  .person-name{font-size:13.5px;font-weight:600;color:var(--navy);}
+  .person-role{font-size:11.5px;color:var(--text-soft);}
+  .person-note{font-size:10.5px;color:var(--wine);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .person-status{font-size:11px;font-weight:600;margin-top:3px;}
+  .person-status.status-free{color:var(--sage);}
+  .person-status.status-flexible{color:var(--amber);font-style:italic;}
+  .person-status.status-soon{color:var(--amber);}
+  .person-status.status-later{color:var(--navy-soft);}
+  .person-status.status-unknown{color:var(--text-soft);font-weight:400;font-style:italic;}
+  .person-actions{display:flex;gap:8px;margin-top:2px;}
+  .person-actions span{font-size:11px;color:var(--navy-soft);cursor:pointer;text-decoration:underline;}
+
+  .week-cell{
+    width:var(--week-w);min-width:var(--week-w);
+    border-right:1px solid var(--border-faint);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative;
+  }
+  .grid-row:not(.head) .week-cell{height:52px;}
+  .week-cell.today{box-shadow:inset 0 0 0 1.5px var(--navy);}
+  .week-head{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;gap:1px;height:44px;}
+  .week-head .month{font-size:10px;color:var(--wine);font-weight:700;text-transform:uppercase;height:12px;}
+  .week-head .num{font-size:12px;font-weight:600;color:var(--navy);}
+  .week-head .date{font-size:10px;color:var(--text-soft);}
+
+  .assign-stack{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;}
+  .assign-seg{
+    width:100%;display:flex;align-items:center;justify-content:center;
+    font-size:9.5px;font-weight:600;color:#fff;padding:0 3px;overflow:hidden;
+    white-space:nowrap;text-overflow:ellipsis;line-height:1.1;
+  }
+  .assign-seg.free-seg{background:var(--sage-light);}
+  .assign-seg-flex{
+    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.32) 0 5px, transparent 5px 10px);
+  }
+  .free-cell{width:100%;height:100%;background:var(--sage-light);opacity:.6;}
+  .free-cell:hover{opacity:1;}
+  .week-cell:hover .free-cell{opacity:1;}
+  .note-flag{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:#fff;opacity:.85;}
+
+  .group-row{background:var(--sage-light);}
+  .group-label{padding:5px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--navy);display:flex;align-items:center;gap:6px;}
+  .group-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .empty-state{padding:60px 20px;text-align:center;color:var(--text-soft);}
+  .empty-state h3{color:var(--navy);margin-bottom:6px;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px;padding:12px 14px;border-top:1px solid var(--border);font-size:12px;}
+  .legend-item{display:flex;align-items:center;gap:6px;color:var(--text-soft);}
+  .legend-swatch{width:11px;height:11px;border-radius:3px;}
+  .legend-swatch.cap-free{background:var(--sage);}
+  .legend-swatch.cap-flex{background:var(--amber);background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.35) 0 4px, transparent 4px 8px);}
+  .legend-swatch.cap-hard{background:var(--navy-soft);}
+
+  .capacity-scroll{overflow-x:auto;padding:18px 14px 4px;}
+  .capacity-caption{padding:0 14px 4px;font-size:12px;color:var(--text-soft);}
+  svg .cap-hard{fill:var(--navy-soft);}
+  svg .cap-flex{fill:var(--amber);}
+  svg .cap-free{fill:var(--sage);}
+  svg .cap-gridline{stroke:var(--border-faint);stroke-width:1;}
+  svg .cap-axis-label{font-size:9.5px;fill:var(--text-soft);font-family:inherit;}
+  svg .cap-reserve-label{font-size:10.5px;font-weight:700;fill:var(--navy);font-family:inherit;}
+  svg .cap-today-marker{fill:none;stroke:var(--navy);stroke-width:1.5;}
+  svg .cap-recruit-marker{fill:var(--wine);}
+
+  /* ---- Modal ---- */
+  .overlay{position:fixed;inset:0;background:rgba(31,51,72,.4);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal{background:var(--panel);border-radius:12px;padding:22px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
+  .modal h2{margin:0 0 16px;font-size:16px;color:var(--navy);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-soft);margin-bottom:5px;font-weight:600;}
+  .field input[type=text], .field select{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13.5px;
+    font-family:inherit;background:#fff;color:var(--text);
+  }
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .checkline{display:flex;align-items:center;gap:7px;font-size:13px;margin-top:6px;color:var(--text-soft);}
+  .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:8px;}
+  .color-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .color-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+  .color-dot.sel{border-color:var(--navy);}
+  .list-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-faint);gap:8px;}
+  .list-row:last-child{border-bottom:none;}
+  .list-row .swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+  .list-row .li-name{flex:1;font-size:13.5px;}
+  .list-row .li-name-input{
+    flex:1;font-size:13.5px;border:1px solid transparent;background:transparent;
+    padding:4px 6px;border-radius:5px;font-family:inherit;color:var(--text);min-width:0;
+  }
+  .list-row .li-name-input:hover{border-color:var(--border);}
+  .list-row .li-name-input:focus{border-color:var(--navy-soft);background:#fff;outline:none;}
+  .list-row .li-actions span{font-size:11.5px;color:var(--wine);cursor:pointer;text-decoration:underline;margin-left:10px;}
+  .add-inline{display:flex;gap:8px;margin-top:10px;}
+  .add-inline input{flex:1;}
+
+  @media (max-width:640px){
+    :root{--week-w:46px;--person-w:130px;}
+    .person-role{display:none;}
+    .app{padding:14px 10px 40px;}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<!-- ===== Microsoft Graph delt lagring (erstatter Claude sitt window.storage) ===== -->
+<script src="https://alcdn.msauth.net/browser/2.38.4/js/msal-browser.min.js"></script>
+<script>
+/* ---- Konfigurasjon: fyll inn verdiene fra app-registreringen ---- */
+const GRAPH = {
+  clientId:     "PASTE_CLIENT_ID",              // Application (client) ID fra Entra
+  tenantId:     "PASTE_TENANT_ID",              // Directory (tenant) ID fra Entra
+  siteHostname: "365veidekke.sharepoint.com",   // SharePoint-domenet deres
+  sitePath:     "/sites/NO-ENT-DistriktSebyAS-IT2", // server-relativ sti til SharePoint-sitet
+  fileName:     "Bemanningsplan-state.json",    // fila i dokumentbibliotekets rot
+  scopes:       ["Files.ReadWrite.All", "Sites.ReadWrite.All"]
+};
+
+let _msal = null;            // opprettes i __authReady når msal-browser er lastet
+let _siteId = null;
+function _lagMsal(){
+  return new msal.PublicClientApplication({
+    auth: {
+      clientId: GRAPH.clientId,
+      authority: "https://login.microsoftonline.com/" + GRAPH.tenantId,
+      redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: { cacheLocation: "localStorage" }
+  });
+}
+
+/* Heldekkende status-overlay (innlogging / oppsett / feil) */
+function _overlay(html){
+  let o = document.getElementById("_graphOverlay");
+  if(!o){
+    o = document.createElement("div");
+    o.id = "_graphOverlay";
+    o.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#F7F6F2;color:#23282B;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:24px;text-align:center;";
+    document.body.appendChild(o);
+  }
+  o.innerHTML = "<div style='max-width:520px;font-size:14px;line-height:1.55'>" + html + "</div>";
+  return o;
+}
+function _hideOverlay(){ const o=document.getElementById("_graphOverlay"); if(o) o.remove(); }
+function _configMangler(){
+  return String(GRAPH.clientId).indexOf("PASTE_")===0 || String(GRAPH.tenantId).indexOf("PASTE_")===0;
+}
+
+/* Sørger for innlogget bruker FØR appen starter (app-init venter på denne) */
+window.__authReady = (async function(){
+  if(_configMangler()){
+    _overlay("<b>Nesten klar.</b><br><br>GRAPH-blokken øverst i denne fila mangler <code>clientId</code> og/eller <code>tenantId</code> fra app-registreringen. Fyll dem inn, lagre og last siden på nytt – så starter verktøyet automatisk.<br><br><span style='color:#6B6F66'>Se README for de gjenstående admin-stegene.</span>");
+    return new Promise(function(){}); // stopp appen til config er fylt inn
+  }
+  if(typeof msal === "undefined" || !msal.PublicClientApplication){
+    _overlay("<b>Kunne ikke laste innloggingsbiblioteket.</b><br><br>Fikk ikke lastet <code>msal-browser</code> fra Microsoft-CDN. Sjekk nettforbindelse, eller at siden hostes et sted som får laste eksterne skript.");
+    return new Promise(function(){});
+  }
+  _msal = _lagMsal();
+  _overlay("Kobler til Microsoft…");
+  try{
+    const resp = await _msal.handleRedirectPromise();
+    let acct = (resp && resp.account) || _msal.getAllAccounts()[0];
+    if(!acct){
+      _overlay("Sender deg til Microsoft-innlogging…");
+      await _msal.loginRedirect({ scopes: GRAPH.scopes });
+      return new Promise(function(){});                  // henger til redirect skjer
+    }
+    _msal.setActiveAccount(acct);
+    _hideOverlay();
+  }catch(e){
+    _overlay("<b>Innlogging feilet.</b><br><br>" + (e && e.message ? e.message : e) +
+      "<br><br>Sjekk at <b>Redirect-URI</b> i app-registreringen er nøyaktig lik denne adressen:<br><code>" +
+      window.location.origin + window.location.pathname + "</code>");
+    return new Promise(function(){});
+  }
+})();
+
+async function _token(){
+  const req = { scopes: GRAPH.scopes, account: _msal.getActiveAccount() };
+  try { return (await _msal.acquireTokenSilent(req)).accessToken; }
+  catch(e){ return (await _msal.acquireTokenPopup(req)).accessToken; }
+}
+async function _graph(path, opts){
+  const t = await _token();
+  opts = opts || {};
+  opts.headers = Object.assign({ Authorization: "Bearer " + t }, opts.headers || {});
+  return fetch("https://graph.microsoft.com/v1.0" + path, opts);
+}
+async function _getSiteId(){
+  if(_siteId) return _siteId;
+  const res = await _graph("/sites/" + GRAPH.siteHostname + ":" + GRAPH.sitePath);
+  if(!res.ok) throw new Error("Fant ikke SharePoint-site (" + res.status + ")");
+  _siteId = (await res.json()).id;
+  return _siteId;
+}
+const _fileContentPath = function(site){
+  return "/sites/" + site + "/drive/root:/" + encodeURIComponent(GRAPH.fileName) + ":/content";
+};
+
+/* window.storage-erstatning: leser/skriver hele planen som én JSON-fil via Graph.
+   Beholder samme grensesnitt som appen forventer: get -> {value:"..."} , set kaster ved feil. */
+window.storage = {
+  async get(key /*, shared */){
+    const site = await _getSiteId();
+    const res = await _graph(_fileContentPath(site));
+    if(res.status === 404) return null;                 // fila finnes ikke ennå -> appen seeder
+    if(!res.ok) throw new Error("Lesing feilet (" + res.status + ")");
+    return { value: await res.text() };
+  },
+  async set(key, value /*, shared */){
+    const site = await _getSiteId();
+    const res = await _graph(_fileContentPath(site), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: value
+    });
+    if(!res.ok) throw new Error("Lagring feilet (" + res.status + ")");
+    return true;
+  }
+};
+</script>
+<!-- ===== slutt Graph-lagring ===== -->
+
+<script>
+/* ============ Konstanter ============ */
+const PALETTE = ["#3A4F63","#7C9070","#7B3B4C","#B8763B","#4E6E8A","#8A6DA8","#5C8A72","#A0524E","#6B7C4E","#9B6B9B"];
+const STORAGE_KEY = "seby-bemanning-state-v2";
+/* Importert fra Funkjonærer_2026.xlsx: dagens team, roller og kjente tildelinger
+   fra og med inneværende uke (2026-W32) og ca. 48 uker frem. Kortnavnene (koder)
+   er de samme forkortelsene som brukes i regnearket i dag – rediger/utvid dem
+   fritt under "Prosjekter". */
+const SEED_STATE = {"people":[],"projects":[],"assignments":{},"recruitments":[]};
+const OPEN_END_FILL_WEEKS = 26; // hvor mange uker "til videre" fylles fremover
+const SOON_FREE_WEEKS = 8;
+const RECRUITMENT_STATUSES = [
+  { id:"identifisert", label:"Behov identifisert", color:"#9B9B93" },
+  { id:"utlyst", label:"Utlyst", color:"#4E6E8A" },
+  { id:"prosess", label:"I prosess (intervju)", color:"#B8763B" },
+  { id:"tilbud", label:"Tilbud gitt", color:"#7C9070" },
+  { id:"ansatt", label:"Ansatt – venter oppstart", color:"#3A4F63" },
+];
+function recruitmentStatusInfo(id){ return RECRUITMENT_STATUSES.find(s=>s.id===id) || RECRUITMENT_STATUSES[0]; }
+
+/* ============ ISO-uke hjelpefunksjoner ============ */
+function isoWeekOf(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  const week = 1 + Math.round((d - firstThursday) / (7*24*3600*1000));
+  return { year: d.getUTCFullYear(), week };
+}
+function weekKey(date){ const {year,week} = isoWeekOf(date); return `${year}-W${String(week).padStart(2,"0")}`; }
+function mondayOfWeekKey(key){
+  const [y,w] = key.split("-W").map(Number);
+  const simple = new Date(Date.UTC(y,0,4));
+  const dayNum = (simple.getUTCDay() + 6) % 7;
+  const week1Monday = new Date(simple);
+  week1Monday.setUTCDate(simple.getUTCDate() - dayNum);
+  const monday = new Date(week1Monday);
+  monday.setUTCDate(week1Monday.getUTCDate() + (w-1)*7);
+  return monday;
+}
+function addWeeks(key, n){
+  const d = mondayOfWeekKey(key);
+  d.setUTCDate(d.getUTCDate() + n*7);
+  return weekKey(d);
+}
+function weekNumOf(key){ return Number(key.split("-W")[1]); }
+function fmtDate(d){ return `${String(d.getUTCDate()).padStart(2,"0")}.${String(d.getUTCMonth()+1).padStart(2,"0")}`; }
+const MONTHS = ["jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"];
+
+function weeksBetweenInclusive(startKey, endKey){
+  // Klemmer til minst startuken hvis sluttdato skulle havne før start (sikkerhetsnett)
+  if(endKey < startKey) endKey = startKey;
+  const out = [];
+  let k = startKey;
+  let guard = 0;
+  while(true){
+    out.push(k);
+    if(k === endKey || guard++ > 400) break;
+    k = addWeeks(k,1);
+  }
+  return out;
+}
+function toIsoDateStr(d){
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}-${String(d.getUTCDate()).padStart(2,"0")}`;
+}
+function parseIsoDateStr(s){
+  if(!s) return null;
+  const parts = s.split("-").map(Number);
+  if(parts.length!==3 || parts.some(isNaN)) return null;
+  return new Date(Date.UTC(parts[0], parts[1]-1, parts[2]));
+}
+
+/* ============ State ============ */
+let state = { people: [], projects: [], assignments: {}, recruitments: [] };
+let viewStartWeek = weekKey(new Date());
+let weekCount = 16;
+let lastSavedAt = null;
+let saveError = false;
+let pollTimer = null;
+let filterRoles = new Set(); // tom = alle stillinger
+let sortBy = "name"; // "name" | "role"
+let roleFilterOpen = false;
+let viewMode = "grid"; // "grid" | "capacity"
+
+function defaultState(){
+  // Dyp kopi av importert startdata, slik at hver ny "installasjon" av
+  // artifacten starter med dagens reelle team.
+  return JSON.parse(JSON.stringify(SEED_STATE));
+}
+function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : "id-"+Math.random().toString(36).slice(2)); }
+
+function migrateAssignmentsShape(s){
+  // Eldre versjon lagret én tildeling per uke som {projectId,note}.
+  // Ny versjon støtter flere samtidige tildelinger (prosentfordeling) per uke: [{projectId,percent,note}, ...]
+  Object.keys(s.assignments || {}).forEach(pid=>{
+    const weekMap = s.assignments[pid];
+    Object.keys(weekMap).forEach(wk=>{
+      const v = weekMap[wk];
+      if(v && !Array.isArray(v)){
+        weekMap[wk] = v.projectId ? [{ projectId: v.projectId, percent: 100, note: v.note || "" }] : [];
+      } else if(Array.isArray(v)){
+        weekMap[wk] = v.map(e=>({ projectId: e.projectId, percent: (e.percent==null?100:e.percent), note: e.note || "" }));
+      }
+    });
+  });
+  (s.projects || []).forEach(pr=>{ if(pr.isFlexible==null) pr.isFlexible = false; });
+  (s.people || []).forEach(p=>{ if(p.note==null) p.note = ""; });
+  if(!Array.isArray(s.recruitments)) s.recruitments = [];
+}
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    if(res && res.value){
+      state = JSON.parse(res.value);
+      if(!state.assignments) state.assignments = {};
+      if(!state.projects) state.projects = [];
+      if(!state.people) state.people = [];
+      if(!state.recruitments) state.recruitments = [];
+      migrateAssignmentsShape(state);
+    } else {
+      state = defaultState();
+      migrateAssignmentsShape(state);
+      await saveState();
+    }
+  } catch(e){
+    state = defaultState();
+    migrateAssignmentsShape(state);
+  }
+  lastSavedAt = new Date();
+  render();
+}
+async function saveState(){
+  // Prøver på nytt én gang ved forbigående feil (f.eks. nettverksglipp/rate-limit),
+  // og gjør feilen synlig i grensesnittet i stedet for å svelge den stille.
+  for(let attempt=0; attempt<2; attempt++){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+      lastSavedAt = new Date();
+      saveError = false;
+      return true;
+    } catch(e){
+      console.error("Lagring feilet (forsøk "+(attempt+1)+")", e);
+      if(attempt===0) await new Promise(r=>setTimeout(r, 900));
+    }
+  }
+  saveError = true;
+  return false;
+}
+async function mutate(fn){
+  fn(state);
+  render();
+  const ok = await saveState();
+  if(!ok) render(); // vis feilbanner hvis lagringen endte opp med å feile
+}
+async function retrySave(){
+  await saveState();
+  render();
+}
+function exportData(){
+  const dataStr = JSON.stringify(state, null, 2);
+  const blob = new Blob([dataStr], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `seby-bemanning-${currentWeekKey()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function triggerImport(){
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+  input.onchange = async ()=>{
+    const file = input.files && input.files[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if(!parsed || typeof parsed!=="object") throw new Error("ugyldig format");
+      if(!confirm("Dette erstatter ALL nåværende data i verktøyet med innholdet i filen. Fortsette?")) return;
+      state = {
+        people: Array.isArray(parsed.people) ? parsed.people : [],
+        projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+        assignments: parsed.assignments && typeof parsed.assignments==="object" ? parsed.assignments : {},
+        recruitments: Array.isArray(parsed.recruitments) ? parsed.recruitments : []
+      };
+      migrateAssignmentsShape(state);
+      await saveState();
+      render();
+      alert("Data importert.");
+    } catch(err){
+      alert("Kunne ikke lese filen. Er det en gyldig eksportfil fra dette verktøyet?");
+    }
+  };
+  input.click();
+}
+
+/* ============ Avledet data ============ */
+function getVisibleWeeks(){
+  const weeks = [];
+  for(let i=0;i<weekCount;i++){
+    const key = addWeeks(viewStartWeek, i);
+    const monday = mondayOfWeekKey(key);
+    weeks.push({ key, monday, num: weekNumOf(key), month: MONTHS[monday.getUTCMonth()] });
+  }
+  return weeks;
+}
+function currentWeekKey(){ return weekKey(new Date()); }
+function getUniqueRoles(){
+  return Array.from(new Set(state.people.map(p=>p.role).filter(r=>r && r.trim()))).sort((a,b)=>a.localeCompare(b,"no"));
+}
+function getFilteredSortedPeople(){
+  let list = state.people.filter(p => filterRoles.size===0 || filterRoles.has(p.role));
+  list = list.slice().sort((a,b)=>{
+    if(sortBy==="role"){
+      const r = (a.role||"").localeCompare(b.role||"","no");
+      if(r!==0) return r;
+    } else if(sortBy==="project"){
+      const pa = getPrimaryProject(a); const pb = getPrimaryProject(b);
+      const la = pa ? pa.name : "\uFFFF"; // uten prosjekt (ledig) sorteres sist
+      const lb = pb ? pb.name : "\uFFFF";
+      const r = la.localeCompare(lb,"no");
+      if(r!==0) return r;
+    }
+    return (a.name||"").localeCompare(b.name||"","no");
+  });
+  return list;
+}
+function getPrimaryProject(person){
+  // Prosjektet med høyest prosentandel denne uken (evt. null hvis ledig)
+  const arr = personAssignments(person.id, currentWeekKey());
+  if(!arr || arr.length===0) return null;
+  let best = arr[0];
+  arr.forEach(a=>{ if((a.percent||0) > (best.percent||0)) best = a; });
+  return projectById(best.projectId) || null;
+}
+function projectById(id){ return state.projects.find(p=>p.id===id); }
+function personAssignments(personId, wKey){
+  // Returnerer alltid en array: [] = ledig, ellers [{projectId,percent,note}, ...]
+  return (state.assignments[personId] || {})[wKey] || [];
+}
+function totalPercent(arr){ return (arr||[]).reduce((sum,a)=>sum+(a.percent||0),0); }
+function hardPercent(arr){
+  // Prosent bundet til faste prosjekter (ikke fleksibelt/anbud) - dette er reell opptatthet
+  return (arr||[]).reduce((sum,a)=>{
+    const proj = projectById(a.projectId);
+    return sum + ((proj && proj.isFlexible) ? 0 : (a.percent||0));
+  },0);
+}
+function flexPercent(arr){
+  // Prosent på fleksibelt/anbudsarbeid - kan omdisponeres ved behov
+  return (arr||[]).reduce((sum,a)=>{
+    const proj = projectById(a.projectId);
+    return sum + ((proj && proj.isFlexible) ? (a.percent||0) : 0);
+  },0);
+}
+function getDatasetHorizonWeek(){
+  // Siste uke som har NOEN tildeling i det hele tatt, på tvers av alle personer.
+  // Brukes til å skille "faktisk ledig" fra "vi har rett og slett ikke lagt inn data lenger frem".
+  let max = null;
+  Object.values(state.assignments).forEach(personMap=>{
+    Object.keys(personMap).forEach(wk=>{
+      if(max===null || wk>max) max = wk;
+    });
+  });
+  return max;
+}
+function findFreeInfo(person){
+  // Status: "free" (helt ledig denne uken), "flexible" (kun anbud/fleksibelt arbeid - kan omdisponeres),
+  // "ending" (kjent dato for full ledighet fra fast prosjekt fremover),
+  // "unknown" (bundet til fast prosjekt helt til kanten av det vi har lagt inn)
+  const cw = currentWeekKey();
+  const horizon = getDatasetHorizonWeek();
+  const nowArr = personAssignments(person.id, cw);
+  if(hardPercent(nowArr)===0){
+    return flexPercent(nowArr)>0 ? { status:"flexible" } : { status:"free" };
+  }
+  let k = cw;
+  let steps = 0;
+  while(steps < 260){ // skanner ca. 5 år frem - noen er bundet til fastprosjekter i flere år
+    if(hardPercent(personAssignments(person.id, k))===0){
+      if(horizon && k > horizon) return { status:"unknown" };
+      return { status:"ending", fromKey:k, weeksAhead:steps };
+    }
+    k = addWeeks(k,1);
+    steps++;
+  }
+  return { status:"unknown" };
+}
+function yearOfWeekKey(key){ return key.split("-W")[0]; }
+function formatWeekShort(key){ return `uke ${weekNumOf(key)}/${yearOfWeekKey(key).slice(2)}`; }
+function personStatusLabel(info){
+  if(info.status==="free") return { text:"Ledig nå", cls:"status-free" };
+  if(info.status==="flexible") return { text:"Fleksibel (anbud) – kan omdisponeres", cls:"status-flexible" };
+  if(info.status==="ending"){
+    const monday = mondayOfWeekKey(info.fromKey);
+    return {
+      text: `Ledig fra uke ${weekNumOf(info.fromKey)}/${yearOfWeekKey(info.fromKey)} (${fmtDate(monday)})`,
+      cls: info.weeksAhead<=SOON_FREE_WEEKS ? "status-soon" : "status-later"
+    };
+  }
+  return { text:"Sluttdato ikke satt", cls:"status-unknown" };
+}
+function assignmentSignature(arr){
+  return (arr||[]).slice().sort((a,b)=>(a.projectId||"").localeCompare(b.projectId||""))
+    .map(a=>`${a.projectId}:${a.percent}`).join("|");
+}
+function getUpcomingBlocks(personId, maxBlocks, maxWeeksAhead){
+  maxBlocks = maxBlocks || 15;
+  maxWeeksAhead = maxWeeksAhead || 260; // ca. 5 år
+  const blocks = [];
+  let k = currentWeekKey();
+  let prevSig = null, blockStart = null, blockArr = null;
+  for(let i=0;i<maxWeeksAhead;i++){
+    const arr = personAssignments(personId, k);
+    const sig = assignmentSignature(arr);
+    if(sig !== prevSig){
+      if(prevSig !== null){
+        blocks.push({ from: blockStart, to: addWeeks(k,-1), arr: blockArr });
+        if(blocks.length>=maxBlocks) return { blocks, truncated:true };
+      }
+      blockStart = k; blockArr = arr; prevSig = sig;
+    }
+    k = addWeeks(k,1);
+  }
+  blocks.push({ from: blockStart, to: addWeeks(k,-1), arr: blockArr, openEnded:true });
+  return { blocks, truncated:false };
+}
+
+/* ============ Render ============ */
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+  app.appendChild(renderTopbar());
+  app.appendChild(renderSummary());
+  app.appendChild(viewMode==="capacity" ? renderCapacityChart() : renderGrid());
+}
+
+function el(tag, cls, html){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+function renderTopbar(){
+  const bar = el("div","topbar");
+
+  const brand = el("div","brand");
+  brand.innerHTML = `<div class="eyebrow">Seby · Funksjonærer</div><h1>Bemanningsplan</h1>`;
+  const sync = el("div","sync-line");
+  if(saveError){
+    sync.classList.add("sync-error");
+    sync.innerHTML = `<span class="sync-dot err"></span> Klarte ikke å lagre siste endring – prøv igjen `;
+    const retryBtn = document.createElement("button");
+    retryBtn.textContent = "Prøv på nytt";
+    retryBtn.onclick = retrySave;
+    sync.appendChild(retryBtn);
+  } else {
+    sync.innerHTML = `<span class="sync-dot"></span> ${lastSavedAt ? "Oppdatert kl " + lastSavedAt.toLocaleTimeString("no-NO",{hour:"2-digit",minute:"2-digit"}) : "Laster…"} `;
+    const refreshBtn = document.createElement("button");
+    refreshBtn.textContent = "Oppdater nå";
+    refreshBtn.onclick = loadState;
+    sync.appendChild(refreshBtn);
+  }
+  brand.appendChild(sync);
+  bar.appendChild(brand);
+
+  const controls = el("div","controls");
+
+  const prev = el("button","btn"); prev.textContent = "← Forrige"; prev.onclick = ()=>{ viewStartWeek = addWeeks(viewStartWeek,-weekCount); render(); };
+  const today = el("button","btn"); today.textContent = "I dag"; today.onclick = ()=>{ viewStartWeek = currentWeekKey(); render(); };
+  const next = el("button","btn"); next.textContent = "Neste →"; next.onclick = ()=>{ viewStartWeek = addWeeks(viewStartWeek,weekCount); render(); };
+
+  const rangeSel = document.createElement("select");
+  rangeSel.className = "btn";
+  [8,12,16,24,36,52].forEach(n=>{
+    const o = document.createElement("option"); o.value=n; o.textContent = n+" uker"; if(n===weekCount) o.selected=true;
+    rangeSel.appendChild(o);
+  });
+  rangeSel.onchange = ()=>{ weekCount = Number(rangeSel.value); render(); };
+
+  const sortSel = document.createElement("select");
+  sortSel.className = "btn";
+  [["name","Sorter: Navn"],["role","Sorter: Stilling"],["project","Sorter: Prosjekt"]].forEach(([val,label])=>{
+    const o = document.createElement("option"); o.value=val; o.textContent=label; if(val===sortBy) o.selected=true;
+    sortSel.appendChild(o);
+  });
+  sortSel.onchange = ()=>{ sortBy = sortSel.value; render(); };
+
+  const filterWrap = el("div","filter-wrap");
+  const filterBtn = el("button","btn");
+  filterBtn.textContent = "Stilling ";
+  if(filterRoles.size>0){
+    const badge = el("span","filter-badge", String(filterRoles.size));
+    filterBtn.appendChild(badge);
+  }
+  filterBtn.onclick = (e)=>{ e.stopPropagation(); roleFilterOpen = !roleFilterOpen; render(); };
+  filterWrap.appendChild(filterBtn);
+  if(roleFilterOpen){
+    const pop = el("div","filter-popover");
+    pop.onclick = (e)=>e.stopPropagation();
+    pop.appendChild(el("div","fp-title","Vis stillinger"));
+    const fpActions = el("div","fp-actions");
+    const allSpan = document.createElement("span"); allSpan.textContent="Alle";
+    allSpan.onclick = ()=>{ filterRoles = new Set(); render(); };
+    const noneSpan = document.createElement("span"); noneSpan.textContent="Ingen";
+    noneSpan.onclick = ()=>{ filterRoles = new Set(getUniqueRoles()); render(); };
+    fpActions.appendChild(allSpan); fpActions.appendChild(noneSpan);
+    pop.appendChild(fpActions);
+    getUniqueRoles().forEach(role=>{
+      const row = el("div","fp-row");
+      const cb = document.createElement("input"); cb.type="checkbox";
+      cb.id = "role-"+role.replace(/\s+/g,"_");
+      cb.checked = filterRoles.size===0 ? true : filterRoles.has(role);
+      cb.onchange = ()=>{
+        if(filterRoles.size===0){
+          // gikk fra "alle" til å ekskludere denne ene
+          filterRoles = new Set(getUniqueRoles());
+          filterRoles.delete(role);
+        } else if(cb.checked){
+          filterRoles.add(role);
+          if(filterRoles.size===getUniqueRoles().length) filterRoles = new Set(); // alle valgt = ingen filter
+        } else {
+          filterRoles.delete(role);
+        }
+        render();
+      };
+      const lbl = document.createElement("label"); lbl.htmlFor=cb.id; lbl.textContent=role;
+      row.appendChild(cb); row.appendChild(lbl);
+      pop.appendChild(row);
+    });
+    filterWrap.appendChild(pop);
+  }
+
+  const viewToggle = el("button", viewMode==="capacity" ? "btn btn-primary" : "btn");
+  viewToggle.textContent = viewMode==="capacity" ? "◧ Vis rutenett" : "📊 Kapasitetsplan";
+  viewToggle.onclick = ()=>{ viewMode = viewMode==="capacity" ? "grid" : "capacity"; render(); };
+
+  const addPersonBtn = el("button","btn btn-primary"); addPersonBtn.textContent = "+ Person"; addPersonBtn.onclick = openPeopleModal;
+  const projBtn = el("button","btn"); projBtn.textContent = "Prosjekter"; projBtn.onclick = openProjectsModal;
+  const recruitBtn = el("button","btn");
+  const openRecruitCount = (state.recruitments||[]).filter(r=>r.status!=="ansatt").length;
+  recruitBtn.textContent = "Rekruttering ";
+  if(openRecruitCount>0){ const badge = el("span","filter-badge", String(openRecruitCount)); recruitBtn.appendChild(badge); }
+  recruitBtn.onclick = openRecruitmentModal;
+  const exportBtn = el("button","btn btn-ghost"); exportBtn.textContent = "⬇ Eksporter"; exportBtn.title = "Last ned all data som backup-fil (.json)"; exportBtn.onclick = exportData;
+  const importBtn = el("button","btn btn-ghost"); importBtn.textContent = "⬆ Importer"; importBtn.title = "Erstatt data med en tidligere eksportert backup-fil"; importBtn.onclick = triggerImport;
+
+  [prev,today,next,rangeSel,sortSel,filterWrap,viewToggle,projBtn,recruitBtn,addPersonBtn,exportBtn,importBtn].forEach(c=>controls.appendChild(c));
+  bar.appendChild(controls);
+  return bar;
+}
+
+function renderSummary(){
+  const wrap = el("div","summary");
+  const cw = currentWeekKey();
+
+  const freeCard = el("div","summary-card");
+  const freeH = el("h3"); freeH.innerHTML = `<span class="dot free"></span> Ledige nå`;
+  freeCard.appendChild(freeH);
+  const scopedPeople = getFilteredSortedPeople();
+  const freeList = el("div","summary-list");
+  const freePeople = scopedPeople.filter(p=>findFreeInfo(p).status==="free");
+  if(freePeople.length===0){ freeList.appendChild(el("div","empty-note","Ingen ledige denne uken")); }
+  freePeople.forEach(p=>{
+    const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b>`; freeList.appendChild(c);
+  });
+  freeCard.appendChild(freeList);
+
+  const flexCard = el("div","summary-card");
+  const flexH = el("h3"); flexH.innerHTML = `<span class="dot flex"></span> Fleksibel (anbud) nå`;
+  flexCard.appendChild(flexH);
+  const flexList = el("div","summary-list");
+  const flexPeople = scopedPeople.filter(p=>findFreeInfo(p).status==="flexible");
+  if(flexPeople.length===0){ flexList.appendChild(el("div","empty-note","Ingen på rent anbudsarbeid nå")); }
+  flexPeople.forEach(p=>{
+    const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b>`; flexList.appendChild(c);
+  });
+  flexCard.appendChild(flexList);
+
+  const soonCard = el("div","summary-card");
+  const soonH = el("h3"); soonH.innerHTML = `<span class="dot soon"></span> Blir ledige innen ${SOON_FREE_WEEKS} uker`;
+  soonCard.appendChild(soonH);
+  const soonList = el("div","summary-list");
+  const soonPeople = scopedPeople.map(p=>({p,info:findFreeInfo(p)})).filter(x=>x.info.status==="ending" && x.info.weeksAhead<=SOON_FREE_WEEKS);
+  if(soonPeople.length===0){ soonList.appendChild(el("div","empty-note","Ingen med kjent sluttdato snart")); }
+  soonPeople.forEach(({p,info})=>{
+    const monday = mondayOfWeekKey(info.fromKey);
+    const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b> · fra uke ${weekNumOf(info.fromKey)} (${fmtDate(monday)})`;
+    soonList.appendChild(c);
+  });
+  soonCard.appendChild(soonList);
+
+  const laterCard = el("div","summary-card");
+  const laterH = el("h3"); laterH.innerHTML = `<span class="dot later"></span> Ledig lenger frem`;
+  laterCard.appendChild(laterH);
+  const laterList = el("div","summary-list");
+  const laterPeople = scopedPeople
+    .map(p=>({p,info:findFreeInfo(p)}))
+    .filter(x=>x.info.status==="ending" && x.info.weeksAhead>SOON_FREE_WEEKS)
+    .sort((a,b)=> a.info.fromKey.localeCompare(b.info.fromKey));
+  if(laterPeople.length===0){ laterList.appendChild(el("div","empty-note","Ingen med kjent sluttdato lenger frem")); }
+  laterPeople.forEach(({p,info})=>{
+    const monday = mondayOfWeekKey(info.fromKey);
+    const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b> · fra uke ${weekNumOf(info.fromKey)} (${fmtDate(monday)})`;
+    laterList.appendChild(c);
+  });
+  laterCard.appendChild(laterList);
+
+  const recruitCard = el("div","summary-card");
+  const recruitH = el("h3"); recruitH.innerHTML = `<span class="dot recruit"></span> Rekruttering på gang`;
+  recruitCard.appendChild(recruitH);
+  const recruitList = el("div","summary-list");
+  const openRecruitments = (state.recruitments||[])
+    .filter(r=>r.status!=="ansatt")
+    .sort((a,b)=>(a.targetDate||"").localeCompare(b.targetDate||""));
+  if(openRecruitments.length===0){ recruitList.appendChild(el("div","empty-note","Ingen aktive rekrutteringsbehov")); }
+  openRecruitments.forEach(r=>{
+    const st = recruitmentStatusInfo(r.status);
+    const dateTxt = r.targetDate ? new Date(r.targetDate+"T00:00:00").toLocaleDateString("no-NO") : "dato ikke satt";
+    const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(r.role||"Uten tittel")}</b> · ${escapeHtml(st.label)} · ${dateTxt}`;
+    recruitList.appendChild(c);
+  });
+  recruitCard.appendChild(recruitList);
+
+  wrap.appendChild(freeCard);
+  wrap.appendChild(flexCard);
+  wrap.appendChild(soonCard);
+  wrap.appendChild(laterCard);
+  wrap.appendChild(recruitCard);
+  return wrap;
+}
+
+function renderGrid(){
+  const wrap = el("div","grid-wrap");
+  if(state.people.length===0){
+    const empty = el("div","empty-state");
+    empty.innerHTML = `<h3>Ingen personer lagt til ennå</h3><p>Legg til de første funksjonærene for å komme i gang.</p>`;
+    const btn = el("button","btn btn-primary","+ Legg til person");
+    btn.onclick = openPeopleModal;
+    empty.appendChild(btn);
+    wrap.appendChild(empty);
+    return wrap;
+  }
+  const peopleList = getFilteredSortedPeople();
+  if(peopleList.length===0){
+    const empty = el("div","empty-state");
+    empty.innerHTML = `<h3>Ingen treff</h3><p>Ingen personer matcher valgt stillingsfilter.</p>`;
+    wrap.appendChild(empty);
+    return wrap;
+  }
+
+  const scroll = el("div","grid-scroll");
+  const weeks = getVisibleWeeks();
+  const cw = currentWeekKey();
+
+  // Header
+  const head = el("div","grid-row head");
+  const headPerson = el("div","person-cell","Person");
+  head.appendChild(headPerson);
+  weeks.forEach(w=>{
+    const wh = el("div","week-cell");
+    wh.style.cursor = "default";
+    const inner = el("div","week-head");
+    const showMonth = (w.monday.getUTCDate() <= 7) || w===weeks[0];
+    inner.innerHTML = `<div class="month">${showMonth ? w.month : ""}</div><div class="num">Uke ${w.num}</div><div class="date">${fmtDate(w.monday)}</div>`;
+    wh.appendChild(inner);
+    if(w.key===cw) wh.classList.add("today");
+    head.appendChild(wh);
+  });
+  scroll.appendChild(head);
+
+  // Rows
+  let lastGroupKey = undefined;
+  peopleList.forEach(person=>{
+    if(sortBy==="role" || sortBy==="project"){
+      let groupKey, groupLabelText, groupColor;
+      if(sortBy==="role"){
+        groupKey = person.role || "";
+        groupLabelText = person.role || "Uten stilling";
+      } else {
+        const proj = getPrimaryProject(person);
+        groupKey = proj ? proj.id : "__free__";
+        groupLabelText = proj ? proj.name : "Ledig";
+        groupColor = proj ? proj.color : null;
+      }
+      if(groupKey !== lastGroupKey){
+        lastGroupKey = groupKey;
+        const groupRow = el("div","grid-row group-row");
+        groupRow.style.minWidth = `calc(var(--person-w) + ${weeks.length} * var(--week-w))`;
+        const groupLabel = el("div","group-label", "");
+        if(groupColor){
+          const dot = el("span","group-dot");
+          dot.style.background = groupColor;
+          groupLabel.appendChild(dot);
+        }
+        groupLabel.appendChild(document.createTextNode(groupLabelText));
+        groupLabel.style.width = "100%";
+        groupRow.appendChild(groupLabel);
+        scroll.appendChild(groupRow);
+      }
+    }
+    const row = el("div","grid-row");
+    const pc = el("div","person-cell");
+    pc.innerHTML = `<div class="person-name">${escapeHtml(person.name)}</div><div class="person-role">${escapeHtml(person.role||"")}</div>`;
+    if(person.note){
+      const noteEl = el("div","person-note", escapeHtml(person.note));
+      noteEl.title = person.note;
+      pc.appendChild(noteEl);
+    }
+    const info = findFreeInfo(person);
+    const statusInfo = personStatusLabel(info);
+    const statusEl = el("div","person-status "+statusInfo.cls, statusInfo.text);
+    pc.appendChild(statusEl);
+
+    const actions = el("div","person-actions");
+    const detailSpan = document.createElement("span"); detailSpan.textContent="Detaljer"; detailSpan.onclick=()=>openPersonDetailModal(person.id);
+    actions.appendChild(detailSpan);
+    pc.appendChild(actions);
+    row.appendChild(pc);
+
+    weeks.forEach(w=>{
+      const cell = el("div","week-cell");
+      if(w.key===cw) cell.classList.add("today");
+      const arr = personAssignments(person.id, w.key);
+      if(arr.length>0){
+        const stack = el("div","assign-stack");
+        let used = 0;
+        arr.forEach(a=>{
+          const proj = projectById(a.projectId);
+          const pct = a.percent==null ? 100 : a.percent;
+          const seg = el("div","assign-seg"+((proj && proj.isFlexible) ? " assign-seg-flex" : ""));
+          seg.style.flex = `${Math.max(pct,1)} 0 0%`;
+          seg.style.background = proj ? proj.color : "#999";
+          seg.textContent = (proj?proj.name:"?") + (arr.length>1 || pct<100 ? " "+pct+"%" : "");
+          seg.title = (proj?proj.name:"") + " " + pct + "%" + (proj && proj.isFlexible ? " (fleksibel/anbud)" : "") + (a.note ? " – "+a.note : "");
+          stack.appendChild(seg);
+          used += pct;
+        });
+        if(used < 100){
+          const freeSeg = el("div","assign-seg free-seg");
+          freeSeg.style.flex = `${100-used} 0 0%`;
+          stack.appendChild(freeSeg);
+        }
+        cell.appendChild(stack);
+        if(arr.some(a=>a.note)){ cell.appendChild(el("div","note-flag")); }
+      } else {
+        cell.appendChild(el("div","free-cell"));
+      }
+      cell.onclick = ()=>openAssignModal(person.id, w.key);
+      row.appendChild(cell);
+    });
+    scroll.appendChild(row);
+  });
+
+  wrap.appendChild(scroll);
+
+  // Legend
+  const legend = el("div","legend");
+  state.projects.forEach(pr=>{
+    const item = el("div","legend-item");
+    item.innerHTML = `<span class="legend-swatch" style="background:${pr.color}"></span> ${escapeHtml(pr.name)}${pr.isFlexible ? ' <span style="font-style:italic;">(anbud/fleksibel)</span>' : ""}`;
+    legend.appendChild(item);
+  });
+  wrap.appendChild(legend);
+
+  return wrap;
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ============ Kapasitetsplan (grafisk fremstilling av ledig kapasitet) ============ */
+function renderCapacityChart(){
+  const wrap = el("div","grid-wrap capacity-wrap");
+  const scopedPeople = getFilteredSortedPeople();
+  if(scopedPeople.length===0){
+    const empty = el("div","empty-state");
+    empty.innerHTML = `<h3>Ingen personer å vise</h3><p>Juster stillingsfilteret, eller legg til personer.</p>`;
+    wrap.appendChild(empty);
+    return wrap;
+  }
+  const weeks = getVisibleWeeks();
+  const cw = currentWeekKey();
+  const total = scopedPeople.length;
+
+  const barW = 20, gap = 12, leftPad = 34, rightPad = 16, topPad = 26, chartH = 240;
+  const svgW = leftPad + rightPad + weeks.length*(barW+gap);
+  const svgH = topPad + chartH + 44;
+
+  let bars = "";
+  let maxReserve = 0;
+  const weekStats = weeks.map(w=>{
+    let free=0, flex=0;
+    scopedPeople.forEach(p=>{
+      const arr = personAssignments(p.id, w.key);
+      if(hardPercent(arr)===0){ if(flexPercent(arr)>0) flex++; else free++; }
+    });
+    const hard = total - free - flex;
+    maxReserve = Math.max(maxReserve, free+flex);
+    return { w, free, flex, hard };
+  });
+
+  const recruitmentsWithDate = (state.recruitments||[]).filter(r=>r.targetDate);
+
+  weekStats.forEach((stat,i)=>{
+    const x = leftPad + i*(barW+gap);
+    let yCursor = topPad+chartH;
+    [
+      {count:stat.hard, cls:"cap-hard"},
+      {count:stat.flex, cls:"cap-flex"},
+      {count:stat.free, cls:"cap-free"},
+    ].forEach(seg=>{
+      if(seg.count<=0) return;
+      const h = (seg.count/total)*chartH;
+      yCursor -= h;
+      bars += `<rect x="${x}" y="${yCursor.toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" class="${seg.cls}" rx="2"></rect>`;
+    });
+    const reserve = stat.free + stat.flex;
+    if(reserve>0){
+      const ry = topPad+chartH-(reserve/total)*chartH - 6;
+      bars += `<text x="${x+barW/2}" y="${ry.toFixed(1)}" text-anchor="middle" class="cap-reserve-label">${reserve}</text>`;
+    }
+    const labelY = topPad+chartH+15;
+    bars += `<text x="${x+barW/2}" y="${labelY}" text-anchor="middle" class="cap-axis-label">${stat.w.num}</text>`;
+    if(stat.w.key===cw){
+      bars += `<rect x="${x-3}" y="${topPad-3}" width="${barW+6}" height="${chartH+6}" class="cap-today-marker" rx="4"></rect>`;
+    }
+    const recruitsHere = recruitmentsWithDate.filter(r=>weekKey(parseIsoDateStr(r.targetDate))===stat.w.key);
+    if(recruitsHere.length>0){
+      const fy = topPad - 12;
+      const roles = recruitsHere.map(r=>r.role||"Rekruttering").join(", ");
+      bars += `<g><title>${escapeHtml(roles)} – planlagt oppstart</title><path d="M${x+barW/2-5} ${fy} L${x+barW/2+5} ${fy} L${x+barW/2} ${fy+9} Z" class="cap-recruit-marker"></path></g>`;
+    }
+  });
+
+  let grid = "";
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const y = topPad+chartH-f*chartH;
+    grid += `<line x1="${leftPad-6}" y1="${y}" x2="${svgW-rightPad}" y2="${y}" class="cap-gridline"></line>`;
+    grid += `<text x="${leftPad-10}" y="${(y+3).toFixed(1)}" text-anchor="end" class="cap-axis-label">${Math.round(f*total)}</text>`;
+  });
+
+  const svgHtml = `<svg viewBox="0 0 ${svgW} ${svgH}" width="100%" style="max-width:${svgW}px;display:block;min-width:${Math.min(svgW, 320)}px;">${grid}${bars}</svg>`;
+
+  const scrollWrap = el("div","capacity-scroll");
+  scrollWrap.innerHTML = svgHtml;
+  wrap.appendChild(scrollWrap);
+
+  const caption = el("div","capacity-caption");
+  caption.textContent = `Tallet over hver søyle = reservekapasitet (ledig + fleksibel/anbud) den uken, av totalt ${total} ${total===1?"person":"personer"}${filterRoles.size>0?" i valgt filter":""}.`;
+  wrap.appendChild(caption);
+
+  const legend = el("div","legend");
+  [["cap-free","Ledig"],["cap-flex","Fleksibel (anbud)"],["cap-hard","Opptatt (fast prosjekt)"]].forEach(([cls,label])=>{
+    const item = el("div","legend-item");
+    item.innerHTML = `<span class="legend-swatch ${cls}"></span> ${label}`;
+    legend.appendChild(item);
+  });
+  if(recruitmentsWithDate.length>0){
+    const item = el("div","legend-item");
+    item.innerHTML = `<span style="color:var(--wine);">▲</span> Planlagt rekrutteringsstart`;
+    legend.appendChild(item);
+  }
+  wrap.appendChild(legend);
+
+  return wrap;
+}
+
+/* ============ Modal: tildeling ============ */
+function openAssignModal(personId, startWeekKey){
+  const person = state.people.find(p=>p.id===personId);
+  const existing = personAssignments(personId, startWeekKey);
+  const overlay = el("div","overlay");
+  const modal = el("div","modal");
+  modal.innerHTML = `<h2>${escapeHtml(person.name)} · fra uke ${weekNumOf(startWeekKey)}</h2>`;
+
+  // Lokal arbeidskopi av radene (prosjekt + prosent + notat) for denne perioden
+  let rows = existing.length>0
+    ? existing.map(a=>({ projectId:a.projectId, percent:(a.percent==null?100:a.percent), note:a.note||"" }))
+    : [{ projectId:"", percent:100, note:"" }];
+
+  const rowsLabel = el("div");
+  rowsLabel.style.display="flex"; rowsLabel.style.justifyContent="space-between"; rowsLabel.style.alignItems="baseline";
+  rowsLabel.innerHTML = `<label style="font-size:12px;color:var(--text-soft);font-weight:600;">Prosjekt(er) og fordeling</label>`;
+  const totalDisplay = el("span");
+  totalDisplay.style.fontSize = "12px";
+  totalDisplay.style.fontWeight = "700";
+  rowsLabel.appendChild(totalDisplay);
+  modal.appendChild(rowsLabel);
+
+  const rowsContainer = el("div");
+  rowsContainer.style.display = "flex";
+  rowsContainer.style.flexDirection = "column";
+  rowsContainer.style.gap = "8px";
+  rowsContainer.style.margin = "8px 0 10px";
+  modal.appendChild(rowsContainer);
+
+  function updateTotalDisplay(){
+    const total = rows.reduce((s,r)=> s + (r.projectId ? (Number(r.percent)||0) : 0), 0);
+    totalDisplay.textContent = total + "% fordelt";
+    totalDisplay.style.color = total>100 ? "var(--wine)" : (total===100 ? "var(--sage)" : "var(--amber)");
+  }
+
+  function renderRows(){
+    rowsContainer.innerHTML = "";
+    rows.forEach((row,idx)=>{
+      const rowEl = el("div");
+      rowEl.style.display = "flex";
+      rowEl.style.gap = "6px";
+      rowEl.style.alignItems = "center";
+
+      const sel = document.createElement("select");
+      sel.style.flex = "2";
+      const noneOpt = document.createElement("option"); noneOpt.value=""; noneOpt.textContent="— Velg prosjekt —";
+      sel.appendChild(noneOpt);
+      state.projects.forEach(pr=>{
+        const o = document.createElement("option"); o.value=pr.id; o.textContent=pr.name + (pr.isFlexible ? " (anbud)" : "");
+        if(row.projectId===pr.id) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.onchange = ()=>{ row.projectId = sel.value; updateTotalDisplay(); };
+
+      const pct = document.createElement("input");
+      pct.type = "number"; pct.min="1"; pct.max="100"; pct.step="5";
+      pct.value = row.percent;
+      pct.style.flex = "0 0 64px";
+      pct.oninput = ()=>{ row.percent = Number(pct.value)||0; updateTotalDisplay(); };
+      const pctWrap = el("div"); pctWrap.style.flex="0 0 64px"; pctWrap.style.position="relative";
+      pctWrap.appendChild(pct);
+      const pctSign = el("span","%"); pctSign.style.cssText="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text-soft);pointer-events:none;";
+      pctSign.textContent="%";
+      pctWrap.appendChild(pctSign);
+
+      const note = document.createElement("input");
+      note.type = "text"; note.placeholder = "Notat";
+      note.value = row.note;
+      note.style.flex = "1.4";
+      note.oninput = ()=>{ row.note = note.value; };
+
+      const rmBtn = document.createElement("button");
+      rmBtn.className = "btn btn-ghost";
+      rmBtn.textContent = "✕";
+      rmBtn.style.flex = "0 0 auto";
+      rmBtn.style.padding = "7px 9px";
+      rmBtn.onclick = ()=>{
+        rows.splice(idx,1);
+        if(rows.length===0) rows.push({projectId:"",percent:100,note:""});
+        renderRows();
+        updateTotalDisplay();
+      };
+
+      rowEl.appendChild(sel); rowEl.appendChild(pctWrap); rowEl.appendChild(note); rowEl.appendChild(rmBtn);
+      rowsContainer.appendChild(rowEl);
+    });
+  }
+  renderRows();
+  updateTotalDisplay();
+
+  const addRowBtn = el("button","btn","+ Legg til prosjekt (f.eks. 50/50)");
+  addRowBtn.style.marginBottom = "14px";
+  addRowBtn.onclick = ()=>{
+    if(rows.length>=4) return;
+    rows.push({ projectId:"", percent:0, note:"" });
+    // fordel jevnt mellom alle rader (f.eks. 2 rader -> 50/50, 3 rader -> 33/33/34)
+    const even = Math.floor(100 / rows.length);
+    let remainder = 100 - even*rows.length;
+    rows.forEach((r,i)=>{ r.percent = even + (i===rows.length-1 ? remainder : 0); });
+    renderRows();
+    updateTotalDisplay();
+  };
+  modal.appendChild(addRowBtn);
+
+  const rangeRow = el("div","field-row");
+  const toField = el("div","field");
+  toField.innerHTML = `<label>Til og med dato</label>`;
+  const startMonday = mondayOfWeekKey(startWeekKey);
+  const toDateInput = document.createElement("input");
+  toDateInput.type = "date";
+  toDateInput.min = toIsoDateStr(startMonday);
+  toDateInput.value = toIsoDateStr(startMonday);
+  const toWeekHint = el("div");
+  toWeekHint.style.cssText = "font-size:11.5px;color:var(--text-soft);margin-top:4px;";
+  function updateToWeekHint(){
+    const d = parseIsoDateStr(toDateInput.value);
+    if(!d){ toWeekHint.textContent = ""; return; }
+    const k = weekKey(d);
+    toWeekHint.textContent = `→ ${formatWeekShort(k)} (${yearOfWeekKey(k)})`;
+  }
+  toDateInput.oninput = updateToWeekHint;
+  updateToWeekHint();
+  toField.appendChild(toDateInput);
+  toField.appendChild(toWeekHint);
+  rangeRow.appendChild(toField);
+  modal.appendChild(rangeRow);
+
+  const openEndLine = el("div","checkline");
+  const openEndChk = document.createElement("input"); openEndChk.type="checkbox"; openEndChk.id="openend";
+  const openEndLbl = document.createElement("label"); openEndLbl.htmlFor="openend"; openEndLbl.textContent = `Ukjent sluttdato (fyller ${OPEN_END_FILL_WEEKS} uker frem)`;
+  openEndLine.appendChild(openEndChk); openEndLine.appendChild(openEndLbl);
+  toField.appendChild(openEndLine);
+  openEndChk.onchange = ()=>{ toDateInput.disabled = openEndChk.checked; toWeekHint.style.opacity = openEndChk.checked ? .4 : 1; };
+
+  const actions = el("div","modal-actions");
+  const leftBtn = el("button","btn btn-danger","Fjern tildeling");
+  leftBtn.onclick = async ()=>{
+    await mutate(s=>{
+      const endKey = openEndChk.checked ? addWeeks(startWeekKey, OPEN_END_FILL_WEEKS) : weekKey(parseIsoDateStr(toDateInput.value) || startMonday);
+      weeksBetweenInclusive(startWeekKey, endKey).forEach(k=>{
+        if(s.assignments[personId]) delete s.assignments[personId][k];
+      });
+    });
+    document.body.removeChild(overlay);
+  };
+  const rightWrap = el("div");
+  rightWrap.style.display="flex"; rightWrap.style.gap="8px";
+  const cancelBtn = el("button","btn","Avbryt"); cancelBtn.onclick = ()=>document.body.removeChild(overlay);
+  const saveBtn = el("button","btn btn-primary","Lagre");
+  saveBtn.onclick = async ()=>{
+    const cleanRows = rows.filter(r=>r.projectId).map(r=>({ projectId:r.projectId, percent: Math.max(1, Math.min(100, Number(r.percent)||0)), note: r.note.trim() }));
+    const endKey = openEndChk.checked ? addWeeks(startWeekKey, OPEN_END_FILL_WEEKS) : weekKey(parseIsoDateStr(toDateInput.value) || startMonday);
+    await mutate(s=>{
+      const weeksToSet = weeksBetweenInclusive(startWeekKey, endKey);
+      if(!s.assignments[personId]) s.assignments[personId] = {};
+      weeksToSet.forEach(k=>{
+        if(cleanRows.length===0){
+          delete s.assignments[personId][k];
+        } else {
+          s.assignments[personId][k] = cleanRows.map(r=>({...r}));
+        }
+      });
+    });
+    document.body.removeChild(overlay);
+  };
+  rightWrap.appendChild(cancelBtn);
+  rightWrap.appendChild(saveBtn);
+  actions.appendChild(leftBtn);
+  actions.appendChild(rightWrap);
+  modal.appendChild(actions);
+
+  overlay.appendChild(modal);
+  overlay.onclick = (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
+/* ============ Modal: person-detaljer (kun én person av gangen) ============ */
+function openPersonDetailModal(personId){
+  const overlay = el("div","overlay");
+  const modal = el("div","modal");
+  modal.style.maxWidth = "480px";
+
+  function buildContent(){
+    modal.innerHTML = "";
+    const person = state.people.find(p=>p.id===personId);
+    if(!person){ modal.innerHTML = "<h2>Fant ikke personen</h2>"; return; }
+
+    modal.appendChild(el("h2","","Personkort"));
+
+    // Navn + stilling
+    const nameField = el("div","field");
+    nameField.innerHTML = `<label>Navn</label>`;
+    const nameInput = document.createElement("input"); nameInput.type="text"; nameInput.value=person.name;
+    nameInput.onchange = async ()=>{
+      const v = nameInput.value.trim();
+      if(!v){ nameInput.value = person.name; return; }
+      await mutate(s=>{ const p=s.people.find(x=>x.id===personId); if(p) p.name=v; });
+    };
+    nameField.appendChild(nameInput);
+    modal.appendChild(nameField);
+
+    const roleField = el("div","field");
+    roleField.innerHTML = `<label>Stilling</label>`;
+    const roleInput = document.createElement("input"); roleInput.type="text"; roleInput.value=person.role||"";
+    roleInput.onchange = async ()=>{
+      await mutate(s=>{ const p=s.people.find(x=>x.id===personId); if(p) p.role=roleInput.value.trim(); });
+    };
+    roleField.appendChild(roleInput);
+    modal.appendChild(roleField);
+
+    const noteField = el("div","field");
+    noteField.innerHTML = `<label>Kommentar (status, permisjon, AAP, sykdom med dato osv.)</label>`;
+    const noteInput = document.createElement("input"); noteInput.type="text"; noteInput.value=person.note||"";
+    noteInput.onchange = async ()=>{
+      await mutate(s=>{ const p=s.people.find(x=>x.id===personId); if(p) p.note=noteInput.value.trim(); });
+    };
+    noteField.appendChild(noteInput);
+    modal.appendChild(noteField);
+
+    // Status
+    const info = findFreeInfo(person);
+    const statusInfo = personStatusLabel(info);
+    const statusBox = el("div");
+    statusBox.style.cssText = "margin:2px 0 16px;padding:8px 10px;border-radius:8px;background:var(--bg);";
+    statusBox.innerHTML = `<div style="font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:3px;">Status</div>`;
+    const statusText = el("div","person-status "+statusInfo.cls, statusInfo.text);
+    statusText.style.fontSize = "13.5px";
+    statusBox.appendChild(statusText);
+    modal.appendChild(statusBox);
+
+    // Tildelinger fremover
+    const blockLabel = el("div");
+    blockLabel.style.cssText = "font-size:12px;color:var(--text-soft);font-weight:600;margin-bottom:6px;";
+    blockLabel.textContent = "Sluttdato / prosjekt fremover";
+    modal.appendChild(blockLabel);
+
+    const { blocks, truncated } = getUpcomingBlocks(personId);
+    const blockList = el("div");
+    blockList.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:6px;max-height:220px;overflow-y:auto;";
+    blocks.forEach(block=>{
+      const row = el("div");
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 9px;background:var(--bg);border-radius:7px;font-size:12.5px;";
+      const rangeText = block.from===block.to
+        ? formatWeekShort(block.from)
+        : `${formatWeekShort(block.from)} – ${formatWeekShort(block.to)}${block.openEnded ? " →" : ""}`;
+      const left = el("div");
+      left.innerHTML = `<div style="font-weight:600;color:var(--navy);">${escapeHtml(rangeText)}</div>`;
+      if(block.arr.length===0){
+        left.innerHTML += `<div style="color:var(--sage);">Ledig</div>`;
+      } else {
+        block.arr.forEach(a=>{
+          const proj = projectById(a.projectId);
+          const flexTag = proj && proj.isFlexible ? " (anbud)" : "";
+          left.innerHTML += `<div>${escapeHtml(proj?proj.name:"?")}${flexTag} · ${a.percent}%${a.note?" · "+escapeHtml(a.note):""}</div>`;
+        });
+      }
+      row.appendChild(left);
+      const editLink = document.createElement("span");
+      editLink.textContent = "Rediger";
+      editLink.style.cssText = "font-size:11.5px;color:var(--navy-soft);text-decoration:underline;cursor:pointer;flex-shrink:0;";
+      editLink.onclick = ()=>{ document.body.removeChild(overlay); openAssignModal(personId, block.from); };
+      row.appendChild(editLink);
+      blockList.appendChild(row);
+    });
+    modal.appendChild(blockList);
+    if(truncated){
+      const trunc = el("div");
+      trunc.style.cssText = "font-size:11px;color:var(--text-soft);margin-bottom:10px;";
+      trunc.textContent = "Viser de nærmeste periodene – flere ligger lenger frem.";
+      modal.appendChild(trunc);
+    }
+
+    const quickEditBtn = el("button","btn btn-primary","+ Ny/endre tildeling fra denne uken");
+    quickEditBtn.style.width = "100%";
+    quickEditBtn.style.marginBottom = "14px";
+    quickEditBtn.onclick = ()=>{ document.body.removeChild(overlay); openAssignModal(personId, currentWeekKey()); };
+    modal.appendChild(quickEditBtn);
+
+    const actions = el("div","modal-actions");
+    const delBtn = el("button","btn btn-danger","Slett person");
+    delBtn.onclick = async ()=>{
+      if(confirm(`Slette ${person.name}? Dette fjerner også alle tildelinger.`)){
+        await mutate(s=>{
+          s.people = s.people.filter(x=>x.id!==personId);
+          delete s.assignments[personId];
+        });
+        document.body.removeChild(overlay);
+      }
+    };
+    const closeBtn = el("button","btn","Lukk");
+    closeBtn.onclick = ()=>document.body.removeChild(overlay);
+    actions.appendChild(delBtn);
+    actions.appendChild(closeBtn);
+    modal.appendChild(actions);
+  }
+
+  buildContent();
+  overlay.appendChild(modal);
+  overlay.onclick = (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
+/* ============ Modal: personer ============ */
+function openPeopleModal(editId){
+  const overlay = el("div","overlay");
+  const modal = el("div","modal");
+  modal.innerHTML = `<h2>Personer</h2>`;
+
+  const list = el("div");
+  function renderList(){
+    list.innerHTML = "";
+    state.people.forEach(p=>{
+      const row = el("div","list-row");
+      const nameDiv = el("div","li-name");
+      nameDiv.innerHTML = `<b>${escapeHtml(p.name)}</b>${p.role? " · "+escapeHtml(p.role):""}`;
+      row.appendChild(nameDiv);
+      const acts = el("div","li-actions");
+      const openLink = document.createElement("span"); openLink.textContent="Åpne";
+      openLink.onclick = ()=>{ document.body.removeChild(overlay); openPersonDetailModal(p.id); };
+      const del = document.createElement("span"); del.textContent="Slett";
+      del.onclick = async ()=>{
+        if(confirm(`Slette ${p.name}? Dette fjerner også tildelinger.`)){
+          await mutate(s=>{
+            s.people = s.people.filter(x=>x.id!==p.id);
+            delete s.assignments[p.id];
+          });
+          renderList();
+        }
+      };
+      acts.appendChild(openLink);
+      acts.appendChild(del);
+      row.appendChild(acts);
+      list.appendChild(row);
+    });
+  }
+  renderList();
+  modal.appendChild(list);
+
+  const addWrap = el("div");
+  addWrap.style.marginTop = "14px";
+  addWrap.innerHTML = `<label style="display:block;font-size:12px;color:var(--text-soft);margin-bottom:5px;font-weight:600;">Legg til person</label>`;
+  const addRow = el("div","add-inline");
+  const nameInput = document.createElement("input"); nameInput.type="text"; nameInput.placeholder="Navn";
+  const roleInput = document.createElement("input"); roleInput.type="text"; roleInput.placeholder="Rolle (f.eks. Anleggsleder)";
+  addRow.appendChild(nameInput); addRow.appendChild(roleInput);
+  addWrap.appendChild(addRow);
+  const addBtn = el("button","btn btn-primary","+ Legg til");
+  addBtn.style.marginTop="8px";
+  addBtn.onclick = async ()=>{
+    if(!nameInput.value.trim()) return;
+    await mutate(s=>{
+      s.people.push({ id: uid(), name: nameInput.value.trim(), role: roleInput.value.trim(), note: "" });
+    });
+    nameInput.value=""; roleInput.value="";
+    renderList();
+  };
+  addWrap.appendChild(addBtn);
+  modal.appendChild(addWrap);
+
+  const closeBtn = el("button","btn","Lukk");
+  closeBtn.style.marginTop="16px";
+  closeBtn.onclick = ()=>document.body.removeChild(overlay);
+  modal.appendChild(closeBtn);
+
+  overlay.appendChild(modal);
+  overlay.onclick = (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
+/* ============ Modal: prosjekter ============ */
+function openProjectsModal(){
+  const overlay = el("div","overlay");
+  const modal = el("div","modal");
+  modal.innerHTML = `<h2>Prosjekter</h2>`;
+
+  const list = el("div");
+  function renderList(){
+    list.innerHTML = "";
+    state.projects.forEach(pr=>{
+      const row = el("div","list-row");
+      row.style.flexDirection = "column";
+      row.style.alignItems = "stretch";
+      row.style.gap = "6px";
+
+      const topLine = el("div");
+      topLine.style.display="flex"; topLine.style.alignItems="center"; topLine.style.gap="8px";
+      const sw = el("span","swatch"); sw.style.background = pr.color;
+      topLine.appendChild(sw);
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.value = pr.name;
+      nameInput.className = "li-name-input";
+      nameInput.onchange = async ()=>{
+        const newName = nameInput.value.trim();
+        if(!newName){ nameInput.value = pr.name; return; }
+        await mutate(s=>{
+          const proj = s.projects.find(x=>x.id===pr.id);
+          if(proj) proj.name = newName;
+        });
+      };
+      topLine.appendChild(nameInput);
+      const acts = el("div","li-actions");
+      const del = document.createElement("span"); del.textContent="Slett";
+      del.onclick = async ()=>{
+        if(confirm(`Slette prosjektet ${pr.name}?`)){
+          await mutate(s=>{
+            s.projects = s.projects.filter(x=>x.id!==pr.id);
+            Object.keys(s.assignments).forEach(pid=>{
+              Object.keys(s.assignments[pid]).forEach(wk=>{
+                const remaining = (s.assignments[pid][wk]||[]).filter(a=>a.projectId!==pr.id);
+                if(remaining.length===0) delete s.assignments[pid][wk];
+                else s.assignments[pid][wk] = remaining;
+              });
+            });
+          });
+          renderList();
+        }
+      };
+      acts.appendChild(del);
+      topLine.appendChild(acts);
+      row.appendChild(topLine);
+
+      const flexLine = el("div","checkline");
+      flexLine.style.marginTop = "0";
+      const flexChk = document.createElement("input"); flexChk.type="checkbox"; flexChk.id="flex-"+pr.id;
+      flexChk.checked = !!pr.isFlexible;
+      flexChk.onchange = async ()=>{
+        await mutate(s=>{
+          const proj = s.projects.find(x=>x.id===pr.id);
+          if(proj) proj.isFlexible = flexChk.checked;
+        });
+      };
+      const flexLbl = document.createElement("label"); flexLbl.htmlFor=flexChk.id;
+      flexLbl.textContent = "Fleksibel / anbudsarbeid (regnes som reservekapasitet, ikke fast opptatt)";
+      flexLine.appendChild(flexChk); flexLine.appendChild(flexLbl);
+      row.appendChild(flexLine);
+
+      list.appendChild(row);
+    });
+  }
+  renderList();
+  modal.appendChild(list);
+
+  const addWrap = el("div");
+  addWrap.style.marginTop = "14px";
+  addWrap.innerHTML = `<label style="display:block;font-size:12px;color:var(--text-soft);margin-bottom:5px;font-weight:600;">Legg til prosjekt</label>`;
+  const nameInput = document.createElement("input"); nameInput.type="text"; nameInput.placeholder="Prosjektnavn"; nameInput.style.width="100%";
+  addWrap.appendChild(nameInput);
+  const colorRow = el("div","color-row");
+  let chosenColor = PALETTE[0];
+  PALETTE.forEach((c,i)=>{
+    const dot = el("div","color-dot"+(i===0?" sel":""));
+    dot.style.background = c;
+    dot.onclick = ()=>{
+      chosenColor = c;
+      colorRow.querySelectorAll(".color-dot").forEach(d=>d.classList.remove("sel"));
+      dot.classList.add("sel");
+    };
+    colorRow.appendChild(dot);
+  });
+  addWrap.appendChild(colorRow);
+  const newFlexLine = el("div","checkline");
+  const newFlexChk = document.createElement("input"); newFlexChk.type="checkbox"; newFlexChk.id="new-flex";
+  const newFlexLbl = document.createElement("label"); newFlexLbl.htmlFor="new-flex";
+  newFlexLbl.textContent = "Fleksibel / anbudsarbeid";
+  newFlexLine.appendChild(newFlexChk); newFlexLine.appendChild(newFlexLbl);
+  addWrap.appendChild(newFlexLine);
+  const addBtn = el("button","btn btn-primary","+ Legg til");
+  addBtn.style.marginTop="10px";
+  addBtn.onclick = async ()=>{
+    if(!nameInput.value.trim()) return;
+    await mutate(s=>{
+      s.projects.push({ id: uid(), name: nameInput.value.trim(), color: chosenColor, isFlexible: newFlexChk.checked });
+    });
+    nameInput.value=""; newFlexChk.checked=false;
+    renderList();
+  };
+  addWrap.appendChild(addBtn);
+  modal.appendChild(addWrap);
+
+  const closeBtn = el("button","btn","Lukk");
+  closeBtn.style.marginTop="16px";
+  closeBtn.onclick = ()=>document.body.removeChild(overlay);
+  modal.appendChild(closeBtn);
+
+  overlay.appendChild(modal);
+  overlay.onclick = (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
+/* ============ Modal: rekrutteringsplan ============ */
+function openRecruitmentModal(){
+  const overlay = el("div","overlay");
+  const modal = el("div","modal");
+  modal.style.maxWidth = "460px";
+  modal.innerHTML = `<h2>Rekrutteringsplan</h2>`;
+
+  const list = el("div");
+  function renderList(){
+    list.innerHTML = "";
+    const sorted = state.recruitments.slice().sort((a,b)=>(a.targetDate||"").localeCompare(b.targetDate||""));
+    if(sorted.length===0){
+      list.appendChild(el("div","empty-note","Ingen rekrutteringsbehov registrert ennå."));
+    }
+    sorted.forEach(rec=>{
+      const row = el("div","list-row");
+      row.style.flexDirection = "column";
+      row.style.alignItems = "stretch";
+      row.style.gap = "6px";
+
+      const topLine = el("div");
+      topLine.style.cssText = "display:flex;align-items:center;gap:8px;";
+      const roleInput = document.createElement("input");
+      roleInput.type = "text"; roleInput.value = rec.role || ""; roleInput.placeholder = "Stilling som søkes";
+      roleInput.className = "li-name-input"; roleInput.style.flex = "1.4";
+      roleInput.onchange = async ()=>{
+        await mutate(s=>{ const r=s.recruitments.find(x=>x.id===rec.id); if(r) r.role=roleInput.value.trim(); });
+      };
+      topLine.appendChild(roleInput);
+
+      const dateInput = document.createElement("input");
+      dateInput.type = "date"; dateInput.value = rec.targetDate || "";
+      dateInput.style.flex = "0 0 140px";
+      dateInput.onchange = async ()=>{
+        await mutate(s=>{ const r=s.recruitments.find(x=>x.id===rec.id); if(r) r.targetDate=dateInput.value; });
+        renderList();
+      };
+      topLine.appendChild(dateInput);
+
+      const acts = el("div","li-actions");
+      const del = document.createElement("span"); del.textContent="Slett";
+      del.onclick = async ()=>{
+        if(confirm(`Slette rekrutteringsbehovet "${rec.role||"(uten navn)"}"?`)){
+          await mutate(s=>{ s.recruitments = s.recruitments.filter(x=>x.id!==rec.id); });
+          renderList();
+        }
+      };
+      acts.appendChild(del);
+      topLine.appendChild(acts);
+      row.appendChild(topLine);
+
+      const secondLine = el("div");
+      secondLine.style.cssText = "display:flex;gap:8px;align-items:center;";
+
+      const projSel = document.createElement("select");
+      projSel.style.flex = "1";
+      const noProjOpt = document.createElement("option"); noProjOpt.value=""; noProjOpt.textContent="— Ikke koblet til prosjekt —";
+      projSel.appendChild(noProjOpt);
+      state.projects.forEach(pr=>{
+        const o = document.createElement("option"); o.value=pr.id; o.textContent=pr.name;
+        if(rec.projectId===pr.id) o.selected=true;
+        projSel.appendChild(o);
+      });
+      projSel.onchange = async ()=>{
+        await mutate(s=>{ const r=s.recruitments.find(x=>x.id===rec.id); if(r) r.projectId=projSel.value; });
+      };
+      secondLine.appendChild(projSel);
+
+      const statusSel = document.createElement("select");
+      statusSel.style.flex = "1";
+      RECRUITMENT_STATUSES.forEach(st=>{
+        const o = document.createElement("option"); o.value=st.id; o.textContent=st.label;
+        if(rec.status===st.id) o.selected=true;
+        statusSel.appendChild(o);
+      });
+      statusSel.onchange = async ()=>{
+        await mutate(s=>{ const r=s.recruitments.find(x=>x.id===rec.id); if(r) r.status=statusSel.value; });
+        renderList();
+      };
+      secondLine.appendChild(statusSel);
+      row.appendChild(secondLine);
+
+      const noteInput = document.createElement("input");
+      noteInput.type = "text"; noteInput.placeholder = "Notat (f.eks. rekrutteringsbyrå, kontaktperson)";
+      noteInput.value = rec.note || "";
+      noteInput.style.fontSize = "12.5px";
+      noteInput.onchange = async ()=>{
+        await mutate(s=>{ const r=s.recruitments.find(x=>x.id===rec.id); if(r) r.note=noteInput.value.trim(); });
+      };
+      row.appendChild(noteInput);
+
+      if(rec.status==="ansatt"){
+        const convertBtn = el("button","btn btn-primary","Ansatt – opprett som person");
+        convertBtn.style.marginTop = "2px";
+        convertBtn.onclick = async ()=>{
+          await mutate(s=>{
+            s.people.push({ id: uid(), name: "(nytt navn – rediger)", role: rec.role||"", note: rec.note||"" });
+            s.recruitments = s.recruitments.filter(x=>x.id!==rec.id);
+          });
+          renderList();
+          alert("Person opprettet. Husk å sette riktig navn og eventuell prosjekttildeling.");
+        };
+        row.appendChild(convertBtn);
+      }
+
+      list.appendChild(row);
+    });
+  }
+  renderList();
+  modal.appendChild(list);
+
+  const addWrap = el("div");
+  addWrap.style.marginTop = "14px";
+  addWrap.innerHTML = `<label style="display:block;font-size:12px;color:var(--text-soft);margin-bottom:5px;font-weight:600;">Nytt rekrutteringsbehov</label>`;
+  const newRole = document.createElement("input"); newRole.type="text"; newRole.placeholder="Stilling (f.eks. Anleggsleder)"; newRole.style.width="100%";
+  addWrap.appendChild(newRole);
+  const addBtn = el("button","btn btn-primary","+ Legg til");
+  addBtn.style.marginTop = "10px";
+  addBtn.onclick = async ()=>{
+    if(!newRole.value.trim()) return;
+    await mutate(s=>{
+      s.recruitments.push({ id: uid(), role:newRole.value.trim(), projectId:"", targetDate:"", status:"identifisert", note:"" });
+    });
+    newRole.value="";
+    renderList();
+  };
+  addWrap.appendChild(addBtn);
+  modal.appendChild(addWrap);
+
+  const closeBtn = el("button","btn","Lukk");
+  closeBtn.style.marginTop="16px";
+  closeBtn.onclick = ()=>document.body.removeChild(overlay);
+  modal.appendChild(closeBtn);
+
+  overlay.appendChild(modal);
+  overlay.onclick = (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
+/* ============ Init ============ */
+document.addEventListener("click", ()=>{
+  if(roleFilterOpen){ roleFilterOpen = false; render(); }
+});
+
+(async function init(){
+  await window.__authReady;   // vent til bruker er innlogget mot Microsoft/Graph
+  await loadState();
+  pollTimer = setInterval(()=>{
+    // Kun stille oppdatering i bakgrunnen når ingen modal er åpen, og aldri
+    // hvis siste lagring feilet (da vil vi ikke overskrive uslagrede lokale endringer)
+    if(!document.querySelector(".overlay") && !saveError) loadState();
+  }, 30000);
+})();
+</script>
+</body>
+</html>
