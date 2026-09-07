@@ -25,16 +25,20 @@
     --person-w:190px;
   }
   *{box-sizing:border-box;}
+  html,body{height:100%;}
   body{
     margin:0;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
     background:var(--bg);
     color:var(--text);
   }
-  .app{max-width:1400px;margin:0 auto;padding:20px 20px 60px;}
+  /* Appen fyller viewporten og legges i en kolonne: toppbar + summary-kort
+     + "Person/Uke..."-hodet ligger fast, mens kun rutenett-KROPPEN (rader
+     under hodet) får sitt eget scroll-område nedenfor (se .grid-wrap/.grid-scroll). */
+  .app{max-width:1400px;margin:0 auto;padding:20px 20px 16px;height:100vh;display:flex;flex-direction:column;}
 
   /* ---- Header ---- */
-  .topbar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:16px;flex-shrink:0;}
   .brand{display:flex;flex-direction:column;gap:2px;}
   .brand .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sage);font-weight:700;}
   .brand h1{margin:0;font-size:22px;color:var(--navy);letter-spacing:-0.01em;}
@@ -70,27 +74,47 @@
   .fp-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;}
   .fp-row label{cursor:pointer;}
 
-  /* ---- Summary ---- */
-  .summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  /* ---- Summary ----
+     Kortet viser bare tittel + antall. Selve lista er absolutt posisjonert og
+     dukker opp som et flytende overlegg over rutenettet under, når man
+     holder musen over (eller fokuserer, for tastatur/touch) kortet. */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:18px;position:relative;z-index:15;flex-shrink:0;}
   .summary-card{
-    flex:1;min-width:240px;background:var(--panel);border:1px solid var(--border);
-    border-radius:var(--radius);padding:12px 14px;
+    position:relative;
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:12px 14px;cursor:default;
   }
-  .summary-card h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);display:flex;align-items:center;gap:6px;}
-  .summary-card .dot{width:8px;height:8px;border-radius:50%;}
+  .summary-card h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);display:flex;align-items:center;gap:6px;}
+  .summary-card .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .summary-card .dot.free{background:var(--sage);}
   .summary-card .dot.soon{background:var(--amber);}
   .summary-card .dot.flex{background:var(--amber);opacity:.6;}
   .summary-card .dot.later{background:var(--navy-soft);}
   .summary-card .dot.recruit{background:var(--wine);}
-  .summary-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .summary-count{margin-left:auto;font-weight:700;color:var(--navy);font-size:12.5px;}
+  .summary-list{
+    display:flex;flex-wrap:wrap;gap:6px;
+    position:absolute;left:0;right:0;top:100%;margin-top:6px;
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:10px 12px;box-shadow:0 12px 28px rgba(31,51,72,.18);
+    max-height:55vh;overflow-y:auto;
+    opacity:0;visibility:hidden;transform:translateY(-4px);
+    transition:opacity .12s ease, transform .12s ease;
+  }
+  .summary-card:hover .summary-list,
+  .summary-card:focus-within .summary-list{
+    opacity:1;visibility:visible;transform:translateY(0);
+  }
   .chip{background:var(--bg);border:1px solid var(--border-faint);border-radius:999px;padding:3px 10px;font-size:12.5px;}
   .chip b{font-weight:600;}
   .empty-note{font-size:12.5px;color:var(--text-soft);}
 
   /* ---- Grid ---- */
-  .grid-wrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-  .grid-scroll{overflow-x:auto;}
+  .grid-wrap{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+    flex:1;min-height:0;display:flex;flex-direction:column;
+  }
+  .grid-scroll{flex:1;min-height:0;overflow:auto;}
   .grid-row{display:flex;}
   .grid-row.head{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--border);}
   .person-cell{
@@ -120,7 +144,7 @@
   }
   .grid-row:not(.head) .week-cell{height:52px;}
   .week-cell.today{box-shadow:inset 0 0 0 1.5px var(--navy);}
-  .week-head{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;gap:1px;height:44px;}
+  .week-head{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;gap:1px;height:50px;}
   .week-head .month{font-size:10px;color:var(--wine);font-weight:700;text-transform:uppercase;height:12px;}
   .week-head .num{font-size:12px;font-weight:600;color:var(--navy);}
   .week-head .date{font-size:10px;color:var(--text-soft);}
@@ -196,10 +220,28 @@
   .add-inline input{flex:1;}
 
   @media (max-width:640px){
-    :root{--week-w:46px;--person-w:130px;}
+    :root{--week-w:52px;--person-w:130px;}
     .person-role{display:none;}
     .app{padding:14px 10px 40px;}
+    .grid-scroll{scroll-snap-type:x proximity;}
+    .week-cell{scroll-snap-align:start;}
+    .grid-row:not(.head) .week-cell{height:58px;}
   }
+
+  /* ---- Søk og "gå til uke" ---- */
+  .search-input{
+    border:1px solid var(--border);background:var(--panel);color:var(--text);
+    padding:7px 10px;border-radius:var(--radius);font-size:13px;font-family:inherit;
+    width:150px;
+  }
+  .search-input:focus{outline:none;border-color:var(--navy-soft);}
+  input.wj-week, input.wj-year{
+    border:1px solid var(--border);background:var(--panel);color:var(--text);
+    padding:7px 6px;border-radius:var(--radius);font-size:13px;font-family:inherit;
+    text-align:center;
+  }
+  input.wj-week{width:44px;}
+  input.wj-year{width:58px;}
 </style>
 </head>
 <body>
@@ -404,10 +446,14 @@ let viewStartWeek = weekKey(new Date());
 let weekCount = 16;
 let lastSavedAt = null;
 let saveError = false;
+let lastLoadedRaw = null; // rå JSON-tekst slik den sist ble lest fra lagring, for å oppdage samtidige endringer
 let pollTimer = null;
 let filterRoles = new Set(); // tom = alle stillinger
+let searchQuery = "";
 let sortBy = "name"; // "name" | "role"
 let roleFilterOpen = false;
+let weekJumpOpen = false;
+let moreMenuOpen = false;
 let viewMode = "grid"; // "grid" | "capacity"
 
 function defaultState(){
@@ -439,6 +485,7 @@ async function loadState(){
   try{
     const res = await window.storage.get(STORAGE_KEY, true);
     if(res && res.value){
+      lastLoadedRaw = res.value;
       state = JSON.parse(res.value);
       if(!state.assignments) state.assignments = {};
       if(!state.projects) state.projects = [];
@@ -462,7 +509,9 @@ async function saveState(){
   // og gjør feilen synlig i grensesnittet i stedet for å svelge den stille.
   for(let attempt=0; attempt<2; attempt++){
     try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+      const raw = JSON.stringify(state);
+      await window.storage.set(STORAGE_KEY, raw, true);
+      lastLoadedRaw = raw;
       lastSavedAt = new Date();
       saveError = false;
       return true;
@@ -473,6 +522,24 @@ async function saveState(){
   }
   saveError = true;
   return false;
+}
+async function checkStaleBeforeSave(){
+  // Sjekker om lagringen er endret av noen andre siden vinduet ble åpnet
+  // (poll'en står stille mens en modal er åpen, se init()-koden nederst).
+  // Returnerer "ok" (ingen konflikt), "reload" (bruker vil laste inn ferskt
+  // og forkaste sin endring), eller "overwrite" (bruker vil lagre likevel).
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    const remoteRaw = res && res.value ? res.value : null;
+    if(remoteRaw!==null && remoteRaw!==lastLoadedRaw){
+      return confirm(
+        "Planen er endret av noen andre siden du åpnet dette vinduet.\n\n" +
+        "OK = last inn de nyeste endringene nå (din redigering her forkastes).\n" +
+        "Avbryt = lagre din endring likevel (overskriver den andre endringen)."
+      ) ? "reload" : "overwrite";
+    }
+  } catch(e){ /* forbigående nettverksfeil her skal ikke blokkere lagring */ }
+  return "ok";
 }
 async function mutate(fn){
   fn(state);
@@ -540,7 +607,11 @@ function getUniqueRoles(){
   return Array.from(new Set(state.people.map(p=>p.role).filter(r=>r && r.trim()))).sort((a,b)=>a.localeCompare(b,"no"));
 }
 function getFilteredSortedPeople(){
-  let list = state.people.filter(p => filterRoles.size===0 || filterRoles.has(p.role));
+  const q = searchQuery.trim().toLowerCase();
+  let list = state.people.filter(p =>
+    (filterRoles.size===0 || filterRoles.has(p.role)) &&
+    (q==="" || (p.name||"").toLowerCase().includes(q))
+  );
   list = list.slice().sort((a,b)=>{
     if(sortBy==="role"){
       const r = (a.role||"").localeCompare(b.role||"","no");
@@ -618,7 +689,7 @@ function findFreeInfo(person){
   return { status:"unknown" };
 }
 function yearOfWeekKey(key){ return key.split("-W")[0]; }
-function formatWeekShort(key){ return `uke ${weekNumOf(key)}/${yearOfWeekKey(key).slice(2)}`; }
+function formatWeekShort(key){ return `uke ${weekNumOf(key)}/${yearOfWeekKey(key)}`; }
 function personStatusLabel(info){
   if(info.status==="free") return { text:"Ledig nå", cls:"status-free" };
   if(info.status==="flexible") return { text:"Fleksibel (anbud) – kan omdisponeres", cls:"status-flexible" };
@@ -658,12 +729,23 @@ function getUpcomingBlocks(personId, maxBlocks, maxWeeksAhead){
 }
 
 /* ============ Render ============ */
+function jumpToWeek(weekKeyStr){
+  viewStartWeek = weekKeyStr;
+  viewMode = "grid";
+  render();
+}
 function render(){
   const app = document.getElementById("app");
+  const activeWasSearch = document.activeElement && document.activeElement.id==="searchInput";
+  const selStart = activeWasSearch ? document.activeElement.selectionStart : null;
   app.innerHTML = "";
   app.appendChild(renderTopbar());
   app.appendChild(renderSummary());
   app.appendChild(viewMode==="capacity" ? renderCapacityChart() : renderGrid());
+  if(activeWasSearch){
+    const input = document.getElementById("searchInput");
+    if(input){ input.focus(); if(selStart!=null) input.setSelectionRange(selStart, selStart); }
+  }
 }
 
 function el(tag, cls, html){
@@ -702,6 +784,47 @@ function renderTopbar(){
   const today = el("button","btn"); today.textContent = "I dag"; today.onclick = ()=>{ viewStartWeek = currentWeekKey(); render(); };
   const next = el("button","btn"); next.textContent = "Neste →"; next.onclick = ()=>{ viewStartWeek = addWeeks(viewStartWeek,weekCount); render(); };
 
+  // "Gå til uke" er en popover (samme mønster som Stilling-filteret) i stedet for
+  // to tallfelt + knapp liggende åpent i baren.
+  const weekJumpWrap = el("div","filter-wrap");
+  const weekJumpBtn = el("button","btn", `Uke ${weekNumOf(viewStartWeek)} · ${yearOfWeekKey(viewStartWeek)}`);
+  weekJumpBtn.onclick = (e)=>{ e.stopPropagation(); weekJumpOpen = !weekJumpOpen; roleFilterOpen=false; moreMenuOpen=false; render(); };
+  weekJumpWrap.appendChild(weekJumpBtn);
+  if(weekJumpOpen){
+    const pop = el("div","filter-popover");
+    pop.style.minWidth = "180px";
+    pop.onclick = (e)=>e.stopPropagation();
+    pop.appendChild(el("div","fp-title","Gå til uke"));
+    const row = el("div"); row.style.cssText = "display:flex;gap:6px;align-items:center;";
+    const wjWeek = document.createElement("input");
+    wjWeek.type="number"; wjWeek.min="1"; wjWeek.max="53"; wjWeek.placeholder="Uke"; wjWeek.className="wj-week";
+    wjWeek.value = weekNumOf(viewStartWeek);
+    const wjYear = document.createElement("input");
+    wjYear.type="number"; wjYear.placeholder="År"; wjYear.className="wj-year";
+    wjYear.value = yearOfWeekKey(viewStartWeek);
+    row.appendChild(wjWeek); row.appendChild(el("span","","/")); row.appendChild(wjYear);
+    pop.appendChild(row);
+    const wjGo = el("button","btn btn-primary","Gå til uke");
+    wjGo.style.marginTop = "8px"; wjGo.style.width = "100%";
+    wjGo.onclick = ()=>{
+      const wk = Math.min(53, Math.max(1, Number(wjWeek.value)||1));
+      const yr = Number(wjYear.value)||new Date().getFullYear();
+      viewStartWeek = `${yr}-W${String(wk).padStart(2,"0")}`;
+      weekJumpOpen = false;
+      render();
+    };
+    pop.appendChild(wjGo);
+    weekJumpWrap.appendChild(pop);
+  }
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.id = "searchInput";
+  searchInput.className = "search-input";
+  searchInput.placeholder = "Søk navn…";
+  searchInput.value = searchQuery;
+  searchInput.oninput = ()=>{ searchQuery = searchInput.value; render(); };
+
   const rangeSel = document.createElement("select");
   rangeSel.className = "btn";
   [8,12,16,24,36,52].forEach(n=>{
@@ -725,7 +848,7 @@ function renderTopbar(){
     const badge = el("span","filter-badge", String(filterRoles.size));
     filterBtn.appendChild(badge);
   }
-  filterBtn.onclick = (e)=>{ e.stopPropagation(); roleFilterOpen = !roleFilterOpen; render(); };
+  filterBtn.onclick = (e)=>{ e.stopPropagation(); roleFilterOpen = !roleFilterOpen; weekJumpOpen=false; moreMenuOpen=false; render(); };
   filterWrap.appendChild(filterBtn);
   if(roleFilterOpen){
     const pop = el("div","filter-popover");
@@ -767,17 +890,36 @@ function renderTopbar(){
   viewToggle.textContent = viewMode==="capacity" ? "◧ Vis rutenett" : "📊 Kapasitetsplan";
   viewToggle.onclick = ()=>{ viewMode = viewMode==="capacity" ? "grid" : "capacity"; render(); };
 
-  const addPersonBtn = el("button","btn btn-primary"); addPersonBtn.textContent = "+ Person"; addPersonBtn.onclick = openPeopleModal;
-  const projBtn = el("button","btn"); projBtn.textContent = "Prosjekter"; projBtn.onclick = openProjectsModal;
-  const recruitBtn = el("button","btn");
+  // Mindre brukte handlinger (personer/prosjekter/rekruttering/import-eksport)
+  // samlet i én "Mer"-meny i stedet for 5 egne knapper i baren.
   const openRecruitCount = (state.recruitments||[]).filter(r=>r.status!=="ansatt").length;
-  recruitBtn.textContent = "Rekruttering ";
-  if(openRecruitCount>0){ const badge = el("span","filter-badge", String(openRecruitCount)); recruitBtn.appendChild(badge); }
-  recruitBtn.onclick = openRecruitmentModal;
-  const exportBtn = el("button","btn btn-ghost"); exportBtn.textContent = "⬇ Eksporter"; exportBtn.title = "Last ned all data som backup-fil (.json)"; exportBtn.onclick = exportData;
-  const importBtn = el("button","btn btn-ghost"); importBtn.textContent = "⬆ Importer"; importBtn.title = "Erstatt data med en tidligere eksportert backup-fil"; importBtn.onclick = triggerImport;
+  const moreWrap = el("div","filter-wrap");
+  const moreBtn = el("button","btn","⋯ Mer");
+  if(openRecruitCount>0){ const badge = el("span","filter-badge", String(openRecruitCount)); moreBtn.appendChild(badge); }
+  moreBtn.onclick = (e)=>{ e.stopPropagation(); moreMenuOpen = !moreMenuOpen; weekJumpOpen=false; roleFilterOpen=false; render(); };
+  moreWrap.appendChild(moreBtn);
+  if(moreMenuOpen){
+    const pop = el("div","filter-popover");
+    pop.style.minWidth = "200px";
+    pop.style.padding = "6px";
+    pop.onclick = (e)=>e.stopPropagation();
+    const menuItem = (label, onClick, badgeCount)=>{
+      const btn = el("button","btn btn-ghost", label);
+      btn.style.cssText = "display:flex;width:100%;justify-content:flex-start;margin:2px 0;";
+      if(badgeCount>0){ const b = el("span","filter-badge", String(badgeCount)); btn.appendChild(b); }
+      btn.onclick = ()=>{ moreMenuOpen=false; render(); onClick(); };
+      pop.appendChild(btn);
+    };
+    menuItem("+ Person", openPeopleModal);
+    menuItem("Prosjekter", openProjectsModal);
+    menuItem("Rekruttering", openRecruitmentModal, openRecruitCount);
+    pop.appendChild(el("div")).style.cssText = "border-top:1px solid var(--border-faint);margin:6px 2px;";
+    menuItem("⬇ Eksporter (backup)", exportData);
+    menuItem("⬆ Importer (backup)", triggerImport);
+    moreWrap.appendChild(pop);
+  }
 
-  [prev,today,next,rangeSel,sortSel,filterWrap,viewToggle,projBtn,recruitBtn,addPersonBtn,exportBtn,importBtn].forEach(c=>controls.appendChild(c));
+  [prev,today,next,weekJumpWrap,rangeSel,sortSel,filterWrap,searchInput,viewToggle,moreWrap].forEach(c=>controls.appendChild(c));
   bar.appendChild(controls);
   return bar;
 }
@@ -786,32 +928,40 @@ function renderSummary(){
   const wrap = el("div","summary");
   const cw = currentWeekKey();
 
-  const freeCard = el("div","summary-card");
-  const freeH = el("h3"); freeH.innerHTML = `<span class="dot free"></span> Ledige nå`;
-  freeCard.appendChild(freeH);
+  // Kortet viser bare tittel + antall til vanlig; hele lista vises som et
+  // flytende overlegg over rutenettet når man holder musen over kortet
+  // (samme idé som filter-popover-ene i toppbaren, men trigget av hover).
+  function summaryCard(dotClass, title){
+    const card = el("div","summary-card");
+    const h = el("h3");
+    h.innerHTML = `<span class="dot ${dotClass}"></span> ${title}`;
+    card.appendChild(h);
+    return card;
+  }
+
   const scopedPeople = getFilteredSortedPeople();
+
+  const freeCard = summaryCard("free","Ledige nå");
   const freeList = el("div","summary-list");
   const freePeople = scopedPeople.filter(p=>findFreeInfo(p).status==="free");
   if(freePeople.length===0){ freeList.appendChild(el("div","empty-note","Ingen ledige denne uken")); }
   freePeople.forEach(p=>{
     const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b>`; freeList.appendChild(c);
   });
+  freeCard.querySelector("h3").appendChild(el("span","summary-count",String(freePeople.length)));
   freeCard.appendChild(freeList);
 
-  const flexCard = el("div","summary-card");
-  const flexH = el("h3"); flexH.innerHTML = `<span class="dot flex"></span> Fleksibel (anbud) nå`;
-  flexCard.appendChild(flexH);
+  const flexCard = summaryCard("flex","Fleksibel (anbud) nå");
   const flexList = el("div","summary-list");
   const flexPeople = scopedPeople.filter(p=>findFreeInfo(p).status==="flexible");
   if(flexPeople.length===0){ flexList.appendChild(el("div","empty-note","Ingen på rent anbudsarbeid nå")); }
   flexPeople.forEach(p=>{
     const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b>`; flexList.appendChild(c);
   });
+  flexCard.querySelector("h3").appendChild(el("span","summary-count",String(flexPeople.length)));
   flexCard.appendChild(flexList);
 
-  const soonCard = el("div","summary-card");
-  const soonH = el("h3"); soonH.innerHTML = `<span class="dot soon"></span> Blir ledige innen ${SOON_FREE_WEEKS} uker`;
-  soonCard.appendChild(soonH);
+  const soonCard = summaryCard("soon",`Blir ledige innen ${SOON_FREE_WEEKS} uker`);
   const soonList = el("div","summary-list");
   const soonPeople = scopedPeople.map(p=>({p,info:findFreeInfo(p)})).filter(x=>x.info.status==="ending" && x.info.weeksAhead<=SOON_FREE_WEEKS);
   if(soonPeople.length===0){ soonList.appendChild(el("div","empty-note","Ingen med kjent sluttdato snart")); }
@@ -820,11 +970,10 @@ function renderSummary(){
     const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b> · fra uke ${weekNumOf(info.fromKey)} (${fmtDate(monday)})`;
     soonList.appendChild(c);
   });
+  soonCard.querySelector("h3").appendChild(el("span","summary-count",String(soonPeople.length)));
   soonCard.appendChild(soonList);
 
-  const laterCard = el("div","summary-card");
-  const laterH = el("h3"); laterH.innerHTML = `<span class="dot later"></span> Ledig lenger frem`;
-  laterCard.appendChild(laterH);
+  const laterCard = summaryCard("later","Ledig lenger frem");
   const laterList = el("div","summary-list");
   const laterPeople = scopedPeople
     .map(p=>({p,info:findFreeInfo(p)}))
@@ -836,15 +985,14 @@ function renderSummary(){
     const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(p.name)}</b> · fra uke ${weekNumOf(info.fromKey)} (${fmtDate(monday)})`;
     laterList.appendChild(c);
   });
+  laterCard.querySelector("h3").appendChild(el("span","summary-count",String(laterPeople.length)));
   laterCard.appendChild(laterList);
 
-  const recruitCard = el("div","summary-card");
-  const recruitH = el("h3"); recruitH.innerHTML = `<span class="dot recruit"></span> Rekruttering på gang`;
-  recruitCard.appendChild(recruitH);
-  const recruitList = el("div","summary-list");
   const openRecruitments = (state.recruitments||[])
     .filter(r=>r.status!=="ansatt")
     .sort((a,b)=>(a.targetDate||"").localeCompare(b.targetDate||""));
+  const recruitCard = summaryCard("recruit","Rekruttering på gang");
+  const recruitList = el("div","summary-list");
   if(openRecruitments.length===0){ recruitList.appendChild(el("div","empty-note","Ingen aktive rekrutteringsbehov")); }
   openRecruitments.forEach(r=>{
     const st = recruitmentStatusInfo(r.status);
@@ -852,6 +1000,7 @@ function renderSummary(){
     const c = el("div","chip"); c.innerHTML = `<b>${escapeHtml(r.role||"Uten tittel")}</b> · ${escapeHtml(st.label)} · ${dateTxt}`;
     recruitList.appendChild(c);
   });
+  recruitCard.querySelector("h3").appendChild(el("span","summary-count",String(openRecruitments.length)));
   recruitCard.appendChild(recruitList);
 
   wrap.appendChild(freeCard);
@@ -1037,6 +1186,7 @@ function renderCapacityChart(){
 
   weekStats.forEach((stat,i)=>{
     const x = leftPad + i*(barW+gap);
+    let colBars = "";
     let yCursor = topPad+chartH;
     [
       {count:stat.hard, cls:"cap-hard"},
@@ -1046,24 +1196,28 @@ function renderCapacityChart(){
       if(seg.count<=0) return;
       const h = (seg.count/total)*chartH;
       yCursor -= h;
-      bars += `<rect x="${x}" y="${yCursor.toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" class="${seg.cls}" rx="2"></rect>`;
+      colBars += `<rect x="${x}" y="${yCursor.toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" class="${seg.cls}" rx="2"></rect>`;
     });
     const reserve = stat.free + stat.flex;
     if(reserve>0){
       const ry = topPad+chartH-(reserve/total)*chartH - 6;
-      bars += `<text x="${x+barW/2}" y="${ry.toFixed(1)}" text-anchor="middle" class="cap-reserve-label">${reserve}</text>`;
+      colBars += `<text x="${x+barW/2}" y="${ry.toFixed(1)}" text-anchor="middle" class="cap-reserve-label">${reserve}</text>`;
     }
     const labelY = topPad+chartH+15;
-    bars += `<text x="${x+barW/2}" y="${labelY}" text-anchor="middle" class="cap-axis-label">${stat.w.num}</text>`;
+    colBars += `<text x="${x+barW/2}" y="${labelY}" text-anchor="middle" class="cap-axis-label">${stat.w.num}</text>`;
     if(stat.w.key===cw){
-      bars += `<rect x="${x-3}" y="${topPad-3}" width="${barW+6}" height="${chartH+6}" class="cap-today-marker" rx="4"></rect>`;
+      colBars += `<rect x="${x-3}" y="${topPad-3}" width="${barW+6}" height="${chartH+6}" class="cap-today-marker" rx="4"></rect>`;
     }
     const recruitsHere = recruitmentsWithDate.filter(r=>weekKey(parseIsoDateStr(r.targetDate))===stat.w.key);
     if(recruitsHere.length>0){
       const fy = topPad - 12;
       const roles = recruitsHere.map(r=>r.role||"Rekruttering").join(", ");
-      bars += `<g><title>${escapeHtml(roles)} – planlagt oppstart</title><path d="M${x+barW/2-5} ${fy} L${x+barW/2+5} ${fy} L${x+barW/2} ${fy+9} Z" class="cap-recruit-marker"></path></g>`;
+      colBars += `<g><title>${escapeHtml(roles)} – planlagt oppstart</title><path d="M${x+barW/2-5} ${fy} L${x+barW/2+5} ${fy} L${x+barW/2} ${fy+9} Z" class="cap-recruit-marker"></path></g>`;
     }
+    // Usynlig fullhøyde-rect over hele søylen (inkl. mellomrom), slik at hele
+    // kolonnen er et klikkbart mål for å hoppe rutenettet til denne uken.
+    colBars += `<rect x="${x-gap/2}" y="0" width="${barW+gap}" height="${svgH}" fill="transparent" style="cursor:pointer;" onclick="jumpToWeek('${stat.w.key}')"><title>Gå til uke ${stat.w.num}</title></rect>`;
+    bars += `<g>${colBars}</g>`;
   });
 
   let grid = "";
@@ -1217,7 +1371,7 @@ function openAssignModal(personId, startWeekKey){
     const d = parseIsoDateStr(toDateInput.value);
     if(!d){ toWeekHint.textContent = ""; return; }
     const k = weekKey(d);
-    toWeekHint.textContent = `→ ${formatWeekShort(k)} (${yearOfWeekKey(k)})`;
+    toWeekHint.textContent = `→ ${formatWeekShort(k)}`;
   }
   toDateInput.oninput = updateToWeekHint;
   updateToWeekHint();
@@ -1236,6 +1390,8 @@ function openAssignModal(personId, startWeekKey){
   const actions = el("div","modal-actions");
   const leftBtn = el("button","btn btn-danger","Fjern tildeling");
   leftBtn.onclick = async ()=>{
+    const verdict = await checkStaleBeforeSave();
+    if(verdict==="reload"){ document.body.removeChild(overlay); await loadState(); return; }
     await mutate(s=>{
       const endKey = openEndChk.checked ? addWeeks(startWeekKey, OPEN_END_FILL_WEEKS) : weekKey(parseIsoDateStr(toDateInput.value) || startMonday);
       weeksBetweenInclusive(startWeekKey, endKey).forEach(k=>{
@@ -1249,6 +1405,8 @@ function openAssignModal(personId, startWeekKey){
   const cancelBtn = el("button","btn","Avbryt"); cancelBtn.onclick = ()=>document.body.removeChild(overlay);
   const saveBtn = el("button","btn btn-primary","Lagre");
   saveBtn.onclick = async ()=>{
+    const verdict = await checkStaleBeforeSave();
+    if(verdict==="reload"){ document.body.removeChild(overlay); await loadState(); return; }
     const cleanRows = rows.filter(r=>r.projectId).map(r=>({ projectId:r.projectId, percent: Math.max(1, Math.min(100, Number(r.percent)||0)), note: r.note.trim() }));
     const endKey = openEndChk.checked ? addWeeks(startWeekKey, OPEN_END_FILL_WEEKS) : weekKey(parseIsoDateStr(toDateInput.value) || startMonday);
     await mutate(s=>{
@@ -1288,7 +1446,8 @@ function openPersonDetailModal(personId){
 
     modal.appendChild(el("h2","","Personkort"));
 
-    // Navn + stilling
+    // Navn + stilling side om side – to korte felt trenger ikke egne fulle rader
+    const topRow = el("div","field-row");
     const nameField = el("div","field");
     nameField.innerHTML = `<label>Navn</label>`;
     const nameInput = document.createElement("input"); nameInput.type="text"; nameInput.value=person.name;
@@ -1298,8 +1457,6 @@ function openPersonDetailModal(personId){
       await mutate(s=>{ const p=s.people.find(x=>x.id===personId); if(p) p.name=v; });
     };
     nameField.appendChild(nameInput);
-    modal.appendChild(nameField);
-
     const roleField = el("div","field");
     roleField.innerHTML = `<label>Stilling</label>`;
     const roleInput = document.createElement("input"); roleInput.type="text"; roleInput.value=person.role||"";
@@ -1307,45 +1464,52 @@ function openPersonDetailModal(personId){
       await mutate(s=>{ const p=s.people.find(x=>x.id===personId); if(p) p.role=roleInput.value.trim(); });
     };
     roleField.appendChild(roleInput);
-    modal.appendChild(roleField);
+    topRow.appendChild(nameField); topRow.appendChild(roleField);
+    modal.appendChild(topRow);
 
     const noteField = el("div","field");
-    noteField.innerHTML = `<label>Kommentar (status, permisjon, AAP, sykdom med dato osv.)</label>`;
+    noteField.innerHTML = `<label>Kommentar</label>`;
     const noteInput = document.createElement("input"); noteInput.type="text"; noteInput.value=person.note||"";
+    noteInput.placeholder = "F.eks. permisjon, AAP, sykdom (med dato)";
     noteInput.onchange = async ()=>{
       await mutate(s=>{ const p=s.people.find(x=>x.id===personId); if(p) p.note=noteInput.value.trim(); });
     };
     noteField.appendChild(noteInput);
     modal.appendChild(noteField);
 
-    // Status
-    const info = findFreeInfo(person);
-    const statusInfo = personStatusLabel(info);
-    const statusBox = el("div");
-    statusBox.style.cssText = "margin:2px 0 16px;padding:8px 10px;border-radius:8px;background:var(--bg);";
-    statusBox.innerHTML = `<div style="font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:3px;">Status</div>`;
-    const statusText = el("div","person-status "+statusInfo.cls, statusInfo.text);
-    statusText.style.fontSize = "13.5px";
-    statusBox.appendChild(statusText);
-    modal.appendChild(statusBox);
-
-    // Tildelinger fremover
+    // Prosjekter fremover – den første perioden ER svaret på "hva nå", så en
+    // egen status-boks over lista ville bare gjentatt den samme informasjonen.
+    // Første rad merkes i stedet med en liten "Nå"-etikett i samme fargespråk
+    // som resten av appen (salvie = ledig, navy = opptatt).
     const blockLabel = el("div");
-    blockLabel.style.cssText = "font-size:12px;color:var(--text-soft);font-weight:600;margin-bottom:6px;";
-    blockLabel.textContent = "Sluttdato / prosjekt fremover";
+    blockLabel.style.cssText = "font-size:12px;color:var(--text-soft);font-weight:600;margin:2px 0 6px;";
+    blockLabel.textContent = "Prosjekter fremover";
     modal.appendChild(blockLabel);
 
     const { blocks, truncated } = getUpcomingBlocks(personId);
     const blockList = el("div");
     blockList.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:6px;max-height:220px;overflow-y:auto;";
-    blocks.forEach(block=>{
+    blocks.forEach((block,idx)=>{
+      const isNow = idx===0;
+      const accent = block.arr.length===0 ? "var(--sage)" : "var(--navy-soft)";
       const row = el("div");
-      row.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 9px;background:var(--bg);border-radius:7px;font-size:12.5px;";
-      const rangeText = block.from===block.to
-        ? formatWeekShort(block.from)
-        : `${formatWeekShort(block.from)} – ${formatWeekShort(block.to)}${block.openEnded ? " →" : ""}`;
+      row.style.cssText = `display:flex;justify-content:space-between;align-items:flex-start;gap:8px;`+
+        `padding:7px 9px;background:var(--bg);border-radius:7px;font-size:12.5px;`+
+        (isNow ? `border-left:3px solid ${accent};` : `border-left:3px solid transparent;`);
+      // "openEnded" betyr at vi har skannet ~5 år frem uten at noe endrer seg –
+      // det er bare et internt skanne-tak, ikke en reell sluttdato. Å vise det
+      // taket som en "til uke ..."-dato (f.eks. "uke 34/31") er misvisende, så
+      // et åpent block vises i stedet som "Fra uke X og fremover".
+      const rangeText = block.openEnded
+        ? `Fra ${formatWeekShort(block.from)} og fremover`
+        : block.from===block.to
+          ? formatWeekShort(block.from)
+          : `${formatWeekShort(block.from)} – ${formatWeekShort(block.to)}`;
       const left = el("div");
-      left.innerHTML = `<div style="font-weight:600;color:var(--navy);">${escapeHtml(rangeText)}</div>`;
+      if(isNow){
+        left.innerHTML = `<div style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:${accent};margin-bottom:2px;">Nå</div>`;
+      }
+      left.innerHTML += `<div style="font-weight:600;color:var(--navy);">${escapeHtml(rangeText)}</div>`;
       if(block.arr.length===0){
         left.innerHTML += `<div style="color:var(--sage);">Ledig</div>`;
       } else {
@@ -1380,13 +1544,14 @@ function openPersonDetailModal(personId){
     const actions = el("div","modal-actions");
     const delBtn = el("button","btn btn-danger","Slett person");
     delBtn.onclick = async ()=>{
-      if(confirm(`Slette ${person.name}? Dette fjerner også alle tildelinger.`)){
-        await mutate(s=>{
-          s.people = s.people.filter(x=>x.id!==personId);
-          delete s.assignments[personId];
-        });
-        document.body.removeChild(overlay);
-      }
+      if(!confirm(`Slette ${person.name}? Dette fjerner også alle tildelinger.`)) return;
+      const verdict = await checkStaleBeforeSave();
+      if(verdict==="reload"){ document.body.removeChild(overlay); await loadState(); return; }
+      await mutate(s=>{
+        s.people = s.people.filter(x=>x.id!==personId);
+        delete s.assignments[personId];
+      });
+      document.body.removeChild(overlay);
     };
     const closeBtn = el("button","btn","Lukk");
     closeBtn.onclick = ()=>document.body.removeChild(overlay);
@@ -1730,7 +1895,10 @@ function openRecruitmentModal(){
 
 /* ============ Init ============ */
 document.addEventListener("click", ()=>{
-  if(roleFilterOpen){ roleFilterOpen = false; render(); }
+  if(roleFilterOpen || weekJumpOpen || moreMenuOpen){
+    roleFilterOpen = false; weekJumpOpen = false; moreMenuOpen = false;
+    render();
+  }
 });
 
 (async function init(){
